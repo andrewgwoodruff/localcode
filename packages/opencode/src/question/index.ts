@@ -3,8 +3,8 @@ import { Bus } from "@/bus"
 import { BusEvent } from "@/bus/bus-event"
 import { InstanceState } from "@/effect/instance-state"
 import { SessionID, MessageID } from "@/session/schema"
+import { zod } from "@/util/effect-zod"
 import { Log } from "@/util/log"
-import z from "zod"
 import { QuestionID } from "./schema"
 
 export namespace Question {
@@ -12,67 +12,90 @@ export namespace Question {
 
   // Schemas
 
-  export const Option = z
-    .object({
-      label: z.string().describe("Display text (1-5 words, concise)"),
-      description: z.string().describe("Explanation of choice"),
-    })
-    .meta({ ref: "QuestionOption" })
-  export type Option = z.infer<typeof Option>
+  const _Option = Schema.Struct({
+    label: Schema.String.annotate({
+      description: "Display text (1-5 words, concise)",
+    }),
+    description: Schema.String.annotate({
+      description: "Explanation of choice",
+    }),
+  }).annotate({ identifier: "QuestionOption" })
+  export const Option = Object.assign(_Option, { zod: zod(_Option) })
+  export type Option = Schema.Schema.Type<typeof _Option>
 
-  export const Info = z
-    .object({
-      question: z.string().describe("Complete question"),
-      header: z.string().describe("Very short label (max 30 chars)"),
-      options: z.array(Option).describe("Available choices"),
-      multiple: z.boolean().optional().describe("Allow selecting multiple choices"),
-      custom: z.boolean().optional().describe("Allow typing a custom answer (default: true)"),
-    })
-    .meta({ ref: "QuestionInfo" })
-  export type Info = z.infer<typeof Info>
+  const base = {
+    question: Schema.String.annotate({
+      description: "Complete question",
+    }),
+    header: Schema.String.annotate({
+      description: "Very short label (max 30 chars)",
+    }),
+    options: Schema.Array(Option).annotate({
+      description: "Available choices",
+    }),
+    multiple: Schema.optional(Schema.Boolean).annotate({
+      description: "Allow selecting multiple choices",
+    }),
+  }
 
-  export const Request = z
-    .object({
-      id: QuestionID.zod,
-      sessionID: SessionID.zod,
-      questions: z.array(Info).describe("Questions to ask"),
-      tool: z
-        .object({
-          messageID: MessageID.zod,
-          callID: z.string(),
-        })
-        .optional(),
-    })
-    .meta({ ref: "QuestionRequest" })
-  export type Request = z.infer<typeof Request>
+  const _Info = Schema.Struct({
+    ...base,
+    custom: Schema.optional(Schema.Boolean).annotate({
+      description: "Allow typing a custom answer (default: true)",
+    }),
+  }).annotate({ identifier: "QuestionInfo" })
+  export const Info = Object.assign(_Info, { zod: zod(_Info) })
+  export type Info = Schema.Schema.Type<typeof _Info>
 
-  export const Answer = z.array(z.string()).meta({ ref: "QuestionAnswer" })
-  export type Answer = z.infer<typeof Answer>
+  const _Prompt = Schema.Struct(base).annotate({ identifier: "QuestionPrompt" })
+  export const Prompt = Object.assign(_Prompt, { zod: zod(_Prompt) })
+  export type Prompt = Schema.Schema.Type<typeof _Prompt>
 
-  export const Reply = z.object({
-    answers: z
-      .array(Answer)
-      .describe("User answers in order of questions (each answer is an array of selected labels)"),
+  const _Tool = Schema.Struct({
+    messageID: MessageID,
+    callID: Schema.String,
+  }).annotate({ identifier: "QuestionTool" })
+  export const Tool = Object.assign(_Tool, { zod: zod(_Tool) })
+  export type Tool = Schema.Schema.Type<typeof _Tool>
+
+  const _Request = Schema.Struct({
+    id: QuestionID,
+    sessionID: SessionID,
+    questions: Schema.Array(Info).annotate({
+      description: "Questions to ask",
+    }),
+    tool: Schema.optional(Tool),
+  }).annotate({ identifier: "QuestionRequest" })
+  export const Request = Object.assign(_Request, { zod: zod(_Request) })
+  export type Request = Schema.Schema.Type<typeof _Request>
+
+  const _Answer = Schema.Array(Schema.String).annotate({ identifier: "QuestionAnswer" })
+  export const Answer = Object.assign(_Answer, { zod: zod(_Answer) })
+  export type Answer = Schema.Schema.Type<typeof _Answer>
+
+  const _Reply = Schema.Struct({
+    answers: Schema.Array(Answer).annotate({
+      description: "User answers in order of questions (each answer is an array of selected labels)",
+    }),
+  }).annotate({ identifier: "QuestionReply" })
+  export const Reply = Object.assign(_Reply, { zod: zod(_Reply) })
+  export type Reply = Schema.Schema.Type<typeof _Reply>
+
+  const replied = Schema.Struct({
+    sessionID: SessionID,
+    requestID: QuestionID,
+    answers: Schema.Array(Answer),
   })
-  export type Reply = z.infer<typeof Reply>
+
+  const rejected = Schema.Struct({
+    sessionID: SessionID,
+    requestID: QuestionID,
+  })
 
   export const Event = {
-    Asked: BusEvent.define("question.asked", Request),
-    Replied: BusEvent.define(
-      "question.replied",
-      z.object({
-        sessionID: SessionID.zod,
-        requestID: QuestionID.zod,
-        answers: z.array(Answer),
-      }),
-    ),
-    Rejected: BusEvent.define(
-      "question.rejected",
-      z.object({
-        sessionID: SessionID.zod,
-        requestID: QuestionID.zod,
-      }),
-    ),
+    Asked: BusEvent.define("question.asked", Request.zod),
+    Replied: BusEvent.define("question.replied", zod(replied)),
+    Rejected: BusEvent.define("question.rejected", zod(rejected)),
   }
 
   export class RejectedError extends Schema.TaggedErrorClass<RejectedError>()("QuestionRejectedError", {}) {
@@ -83,7 +106,7 @@ export namespace Question {
 
   interface PendingEntry {
     info: Request
-    deferred: Deferred.Deferred<Answer[], RejectedError>
+    deferred: Deferred.Deferred<ReadonlyArray<Answer>, RejectedError>
   }
 
   interface State {
@@ -95,12 +118,12 @@ export namespace Question {
   export interface Interface {
     readonly ask: (input: {
       sessionID: SessionID
-      questions: Info[]
-      tool?: { messageID: MessageID; callID: string }
-    }) => Effect.Effect<Answer[], RejectedError>
-    readonly reply: (input: { requestID: QuestionID; answers: Answer[] }) => Effect.Effect<void>
+      questions: ReadonlyArray<Info>
+      tool?: Tool
+    }) => Effect.Effect<ReadonlyArray<Answer>, RejectedError>
+    readonly reply: (input: { requestID: QuestionID; answers: ReadonlyArray<Answer> }) => Effect.Effect<void>
     readonly reject: (requestID: QuestionID) => Effect.Effect<void>
-    readonly list: () => Effect.Effect<Request[]>
+    readonly list: () => Effect.Effect<ReadonlyArray<Request>>
   }
 
   export class Service extends Context.Service<Service, Interface>()("@opencode/Question") {}
@@ -130,14 +153,14 @@ export namespace Question {
 
       const ask = Effect.fn("Question.ask")(function* (input: {
         sessionID: SessionID
-        questions: Info[]
-        tool?: { messageID: MessageID; callID: string }
+        questions: ReadonlyArray<Info>
+        tool?: Tool
       }) {
         const pending = (yield* InstanceState.get(state)).pending
         const id = QuestionID.ascending()
         log.info("asking", { id, questions: input.questions.length })
 
-        const deferred = yield* Deferred.make<Answer[], RejectedError>()
+        const deferred = yield* Deferred.make<ReadonlyArray<Answer>, RejectedError>()
         const info: Request = {
           id,
           sessionID: input.sessionID,
@@ -155,7 +178,10 @@ export namespace Question {
         )
       })
 
-      const reply = Effect.fn("Question.reply")(function* (input: { requestID: QuestionID; answers: Answer[] }) {
+      const reply = Effect.fn("Question.reply")(function* (input: {
+        requestID: QuestionID
+        answers: ReadonlyArray<Answer>
+      }) {
         const pending = (yield* InstanceState.get(state)).pending
         const existing = pending.get(input.requestID)
         if (!existing) {
