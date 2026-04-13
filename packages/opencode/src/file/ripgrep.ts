@@ -3,7 +3,7 @@ import path from "path"
 import { Global } from "../global"
 import fs from "fs/promises"
 import z from "zod"
-import { Effect, Layer, Context, Schema } from "effect"
+import { Array as Arr, Effect, Layer, Context, Schema } from "effect"
 import * as Stream from "effect/Stream"
 import { ChildProcess } from "effect/unstable/process"
 import { ChildProcessSpawner } from "effect/unstable/process/ChildProcessSpawner"
@@ -126,7 +126,7 @@ export namespace Ripgrep {
     Schema.Struct({ type: Schema.Literal("summary"), data: Schema.Unknown }),
   ])
 
-  const decode = Schema.decodeUnknownEffect(Schema.fromJsonString(Row))
+  const decode = Schema.decodeUnknownSync(Schema.fromJsonString(Row))
 
   export type Result = z.infer<typeof Result>
   export type Match = z.infer<typeof Match>
@@ -428,8 +428,11 @@ export namespace Ripgrep {
                 Stream.decodeText(handle.stdout).pipe(
                   Stream.splitLines,
                   Stream.filter((line) => line.length > 0),
-                  Stream.mapEffect((line) =>
-                    decode(line).pipe(Effect.mapError((cause) => new Error("invalid ripgrep output", { cause }))),
+                  Stream.mapArrayEffect((lines) =>
+                    Effect.try({
+                      try: () => Arr.map(lines, (line) => decode(line)),
+                      catch: (cause) => new Error("invalid ripgrep output", { cause }),
+                    }),
                   ),
                   Stream.filter((row): row is Schema.Schema.Type<typeof Hit> => row.type === "match"),
                   Stream.map((row): Item => row.data),
