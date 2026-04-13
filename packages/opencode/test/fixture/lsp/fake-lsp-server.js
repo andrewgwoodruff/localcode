@@ -3,8 +3,15 @@
 
 const fs = require("fs")
 const net = require("net")
+const path = require("path")
 
 const mark = process.argv[2]
+
+if (mark) {
+  try {
+    process.chdir(path.dirname(mark))
+  } catch {}
+}
 
 function writeMark() {
   if (!mark) return

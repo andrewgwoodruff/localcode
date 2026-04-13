@@ -118,6 +118,8 @@ export namespace LSP {
     SymbolKind.Enum,
   ]
 
+  const key = (id: string, root: string) => `${id}\0${root}`
+
   const filterExperimentalServers = (servers: Record<string, LSPServer.Info>) => {
     if (Flag.OPENCODE_EXPERIMENTAL_LSP_TY) {
       if (servers["pyright"]) {
@@ -139,7 +141,7 @@ export namespace LSP {
     broken: Set<string>
     pruning: Promise<void> | undefined
     spawning: Map<string, Promise<LSPClient.Info | undefined>>
-    subs: Map<string, FSWatcher>
+    subs: Map<string, { sub: FSWatcher; names: Set<string> }>
     timer: ReturnType<typeof setTimeout> | undefined
   }
 
@@ -224,8 +226,8 @@ export namespace LSP {
           yield* Effect.addFinalizer(() =>
             Effect.promise(async () => {
               if (s.timer) clearTimeout(s.timer)
-              for (const sub of s.subs.values()) {
-                sub.close()
+              for (const item of s.subs.values()) {
+                item.sub.close()
               }
               await Promise.all(s.clients.map((client) => client.shutdown()))
             }),
@@ -288,7 +290,8 @@ export namespace LSP {
 
             const root = await server.root(file)
             if (!root) continue
-            if (s.broken.has(root + server.id)) continue
+            const id = key(server.id, root)
+            if (s.broken.has(id)) continue
 
             const match = s.clients.find((x) => x.root === root && x.serverID === server.id)
             if (match) {
@@ -296,7 +299,7 @@ export namespace LSP {
               continue
             }
 
-            const inflight = s.spawning.get(root + server.id)
+            const inflight = s.spawning.get(id)
             if (inflight) {
               const client = await inflight
               if (!client) continue
@@ -304,12 +307,12 @@ export namespace LSP {
               continue
             }
 
-            const task = schedule(server, root, root + server.id)
-            s.spawning.set(root + server.id, task)
+            const task = schedule(server, root, id)
+            s.spawning.set(id, task)
 
             task.finally(() => {
-              if (s.spawning.get(root + server.id) === task) {
-                s.spawning.delete(root + server.id)
+              if (s.spawning.get(id) === task) {
+                s.spawning.delete(id)
               }
             })
 
@@ -330,34 +333,49 @@ export namespace LSP {
       })
 
       function sync(s: State) {
-        const next = new Set(s.clients.map((client) => path.dirname(client.root)))
+        const next = new Map<string, Set<string>>()
 
-        for (const [dir, sub] of s.subs) {
-          if (next.has(dir)) continue
-          s.subs.delete(dir)
-          sub.close()
+        for (const client of s.clients) {
+          const dir = path.dirname(client.root)
+          const names = next.get(dir) ?? new Set<string>()
+          names.add(path.basename(client.root))
+          next.set(dir, names)
         }
 
-        for (const dir of next) {
-          if (s.subs.has(dir)) continue
+        for (const [dir, item] of s.subs) {
+          if (next.has(dir)) continue
+          s.subs.delete(dir)
+          item.sub.close()
+        }
+
+        for (const [dir, names] of next) {
+          const existing = s.subs.get(dir)
+          if (existing) {
+            existing.names = names
+            continue
+          }
           try {
             const sub = fswatch(
               dir,
               { persistent: false },
-              Instance.bind(() => {
+              Instance.bind((_, file) => {
+                if (file) {
+                  const name = String(file)
+                  if (!s.subs.get(dir)?.names.has(name)) return
+                }
                 kick(s)
               }),
             )
             sub.on(
               "error",
               Instance.bind(() => {
-                if (s.subs.get(dir) !== sub) return
+                if (s.subs.get(dir)?.sub !== sub) return
                 s.subs.delete(dir)
                 sub.close()
                 kick(s)
               }),
             )
-            s.subs.set(dir, sub)
+            s.subs.set(dir, { sub, names })
           } catch {}
         }
       }
@@ -381,8 +399,8 @@ export namespace LSP {
           ).filter((client): client is LSPClient.Info => Boolean(client))
           if (!dead.length) return
 
-          const ids = new Set(dead.map((client) => `${client.serverID}:${client.root}`))
-          s.clients = s.clients.filter((client) => !ids.has(`${client.serverID}:${client.root}`))
+          const ids = new Set(dead.map((client) => key(client.serverID, client.root)))
+          s.clients = s.clients.filter((client) => !ids.has(key(client.serverID, client.root)))
           sync(s)
           await Promise.all(dead.map((client) => client.shutdown().catch(() => undefined)))
           await Bus.publish(Event.Updated, {})
@@ -432,7 +450,7 @@ export namespace LSP {
             if (server.extensions.length && !server.extensions.includes(extension)) continue
             const root = await server.root(file)
             if (!root) continue
-            if (s.broken.has(root + server.id)) continue
+            if (s.broken.has(key(server.id, root))) continue
             return true
           }
           return false
