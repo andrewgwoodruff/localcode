@@ -5,6 +5,7 @@ import { InstanceState } from "@/effect/instance-state"
 import { SessionID, MessageID } from "@/session/schema"
 import { zod } from "@/util/effect-zod"
 import { Log } from "@/util/log"
+import { withStatics } from "@/util/schema"
 import { QuestionID } from "./schema"
 
 export namespace Question {
@@ -69,9 +70,10 @@ export namespace Question {
     static readonly zod = zod(this)
   }
 
-  const _Answer = Schema.Array(Schema.String).annotate({ identifier: "QuestionAnswer" })
-  export const Answer = Object.assign(_Answer, { zod: zod(_Answer) })
-  export type Answer = Schema.Schema.Type<typeof _Answer>
+  export const Answer = Schema.Array(Schema.String)
+    .annotate({ identifier: "QuestionAnswer" })
+    .pipe(withStatics((s) => ({ zod: zod(s) })))
+  export type Answer = Schema.Schema.Type<typeof Answer>
 
   export class Reply extends Schema.Class<Reply>("QuestionReply")({
     answers: Schema.Array(Answer).annotate({
