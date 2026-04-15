@@ -22,7 +22,7 @@ import { SplitBorder } from "@tui/component/border"
 import { Spinner } from "@tui/component/spinner"
 import { selectedForeground, useTheme } from "@tui/context/theme"
 import { BoxRenderable, ScrollBoxRenderable, addDefaultParsers, TextAttributes, RGBA } from "@opentui/core"
-import { Prompt, type PromptRef } from "@tui/component/prompt"
+import { Prompt } from "@tui/component/prompt"
 import type {
   AssistantMessage,
   Part,
@@ -72,7 +72,7 @@ import { Toast, useToast } from "../../ui/toast"
 import { useKV } from "../../context/kv.tsx"
 import { Editor } from "../../util/editor"
 import stripAnsi from "strip-ansi"
-import { usePromptRef } from "../../context/prompt"
+import { sessionScope, usePromptRef } from "../../context/prompt"
 import { useExit } from "../../context/exit"
 import { Filesystem } from "@/util/filesystem"
 import { Global } from "@/global"
@@ -87,6 +87,7 @@ import { getScrollAcceleration } from "../../util/scroll"
 import { TuiPluginRuntime } from "../../plugin"
 import { DialogGoUpsell } from "../../component/dialog-go-upsell"
 import { SessionRetry } from "@/session/retry"
+import { strip } from "../../component/prompt/part"
 
 addDefaultParsers(parsers.parsers)
 
@@ -142,6 +143,8 @@ export function Session() {
   })
   const visible = createMemo(() => !session()?.parentID && permissions().length === 0 && questions().length === 0)
   const disabled = createMemo(() => permissions().length > 0 || questions().length > 0)
+  const scope = createMemo(() => sessionScope(route.sessionID))
+  let seeded: string | undefined
 
   const pending = createMemo(() => {
     return messages().findLast((x) => x.role === "assistant" && !x.time.completed)?.id
@@ -199,8 +202,6 @@ export function Session() {
       })
   })
 
-  // Handle initial prompt from fork
-  let seeded = false
   let lastSwitch: string | undefined = undefined
   event.on("message.part.updated", (evt) => {
     const part = evt.properties.part
@@ -218,15 +219,23 @@ export function Session() {
     }
   })
 
+  createEffect(() => {
+    const key = scope()
+    if (seeded === key) return
+
+    if (promptRef.current(key)) {
+      if (route.initialPrompt) seeded = key
+      return
+    }
+
+    if (!route.initialPrompt) return
+
+    promptRef.apply(key, route.initialPrompt)
+    seeded = key
+  })
+
   let scroll: ScrollBoxRenderable
-  let prompt: PromptRef | undefined
-  const bind = (r: PromptRef | undefined) => {
-    prompt = r
-    promptRef.set(r)
-    if (seeded || !route.initialPrompt || !r) return
-    seeded = true
-    r.set(route.initialPrompt)
-  }
+  const bind = () => {}
   const keybind = useKeybind()
   const dialog = useDialog()
   const renderer = useRenderer()
@@ -438,7 +447,6 @@ export function Session() {
               if (child) scroll.scrollBy(child.y - scroll.y - 1)
             }}
             sessionID={route.sessionID}
-            setPrompt={(promptInfo) => prompt?.set(promptInfo)}
           />
         ))
       },
@@ -539,13 +547,14 @@ export function Session() {
             toBottom()
           })
         const parts = sync.data.part[message.id]
-        prompt?.set(
+        promptRef.apply(
+          scope(),
           parts.reduce(
             (agg, part) => {
               if (part.type === "text") {
                 if (!part.synthetic) agg.input += part.text
               }
-              if (part.type === "file") agg.parts.push(part)
+              if (part.type === "file") agg.parts.push(strip(part))
               return agg
             },
             { input: "", parts: [] as PromptInfo["parts"] },
@@ -572,7 +581,7 @@ export function Session() {
           sdk.client.session.unrevert({
             sessionID: route.sessionID,
           })
-          prompt?.set({ input: "", parts: [] })
+          promptRef.apply(scope(), { input: "", parts: [] })
           return
         }
         sdk.client.session.revert({
@@ -1149,13 +1158,7 @@ export function Session() {
                         index={index()}
                         onMouseUp={() => {
                           if (renderer.getSelection()?.getSelectedText()) return
-                          dialog.replace(() => (
-                            <DialogMessage
-                              messageID={message.id}
-                              sessionID={route.sessionID}
-                              setPrompt={(promptInfo) => prompt?.set(promptInfo)}
-                            />
-                          ))
+                          dialog.replace(() => <DialogMessage messageID={message.id} sessionID={route.sessionID} />)
                         }}
                         message={message as UserMessage}
                         parts={sync.data.part[message.id] ?? []}

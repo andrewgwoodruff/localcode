@@ -11,8 +11,9 @@ import { useSDK } from "@tui/context/sdk"
 import { useRoute } from "@tui/context/route"
 import { useSync } from "@tui/context/sync"
 import { useEvent } from "@tui/context/event"
+import { homeScope, sessionScope, usePromptRef } from "@tui/context/prompt"
 import { MessageID, PartID } from "@/session/schema"
-import { createStore, produce } from "solid-js/store"
+import { createStore, produce, unwrap } from "solid-js/store"
 import { useKeybind } from "@tui/context/keybind"
 import { usePromptHistory, type PromptInfo } from "./history"
 import { assign } from "./part"
@@ -57,6 +58,7 @@ export type PromptProps = {
 export type PromptRef = {
   focused: boolean
   current: PromptInfo
+  snapshot(): PromptInfo
   set(prompt: PromptInfo): void
   reset(): void
   blur(): void
@@ -85,6 +87,7 @@ export function Prompt(props: PromptProps) {
   const route = useRoute()
   const sync = useSync()
   const dialog = useDialog()
+  const promptState = usePromptRef()
   const toast = useToast()
   const status = createMemo(() => sync.data.session_status?.[props.sessionID ?? ""] ?? { type: "idle" })
   const history = usePromptHistory()
@@ -98,6 +101,14 @@ export function Prompt(props: PromptProps) {
   const [auto, setAuto] = createSignal<AutocompleteRef>()
   const currentProviderLabel = createMemo(() => local.model.parsed().provider)
   const hasRightContent = createMemo(() => Boolean(props.right))
+  const scope = createMemo(() => {
+    if (props.sessionID) return sessionScope(props.sessionID)
+    if (props.workspaceID !== undefined) return homeScope(props.workspaceID)
+    if (route.data.type === "session") return sessionScope(route.data.sessionID)
+    if (route.data.type === "plugin") return `plugin:${route.data.id}`
+    return homeScope()
+  })
+  let active: string | undefined
 
   function promptModelWarning() {
     toast.show({
@@ -177,6 +188,7 @@ export function Prompt(props: PromptProps) {
     extmarkToPartIndex: new Map(),
     interrupt: 0,
   })
+  const [ready, setReady] = createSignal(false)
 
   createEffect(
     on(
@@ -219,8 +231,7 @@ export function Prompt(props: PromptProps) {
         category: "Prompt",
         hidden: true,
         onSelect: (dialog) => {
-          input.extmarks.clear()
-          input.clear()
+          ref.reset()
           dialog.clear()
         },
       },
@@ -397,12 +408,61 @@ export function Prompt(props: PromptProps) {
     ]
   })
 
+  function clearPrompt(mode: "keep" | "normal" = "keep") {
+    input.extmarks.clear()
+    input.clear()
+    setStore("prompt", {
+      input: "",
+      parts: [],
+    })
+    setStore("extmarkToPartIndex", new Map())
+    if (mode === "normal") {
+      setStore("mode", "normal")
+    }
+  }
+
+  function restorePrompt(prompt: PromptInfo) {
+    const next = structuredClone(unwrap(prompt))
+    input.setText(next.input)
+    setStore("mode", next.mode ?? "normal")
+    setStore("prompt", {
+      input: next.input,
+      parts: next.parts,
+    })
+    restoreExtmarksFromParts(next.parts)
+    input.gotoBufferEnd()
+  }
+
+  function snapshot() {
+    const value = input && !input.isDestroyed ? input.plainText : store.prompt.input
+
+    if (input && !input.isDestroyed) {
+      if (value !== store.prompt.input) {
+        setStore("prompt", "input", value)
+      }
+      syncExtmarksWithPromptParts()
+    }
+
+    return {
+      input: value,
+      mode: store.mode,
+      parts: structuredClone(unwrap(store.prompt.parts)),
+    } satisfies PromptInfo
+  }
+
   const ref: PromptRef = {
     get focused() {
       return input.focused
     },
     get current() {
-      return store.prompt
+      return {
+        input: store.prompt.input,
+        mode: store.mode,
+        parts: store.prompt.parts,
+      }
+    },
+    snapshot() {
+      return snapshot()
     },
     focus() {
       input.focus()
@@ -411,26 +471,58 @@ export function Prompt(props: PromptProps) {
       input.blur()
     },
     set(prompt) {
-      input.setText(prompt.input)
-      setStore("prompt", prompt)
-      restoreExtmarksFromParts(prompt.parts)
-      input.gotoBufferEnd()
+      restorePrompt(prompt)
+      if (active) {
+        promptState.save(active, snapshot())
+      }
     },
     reset() {
-      input.clear()
-      input.extmarks.clear()
-      setStore("prompt", {
-        input: "",
-        parts: [],
-      })
-      setStore("extmarkToPartIndex", new Map())
+      clearPrompt()
+      if (active) {
+        promptState.drop(active)
+      }
     },
     submit() {
       submit()
     },
   }
 
+  createEffect(() => {
+    if (!ready()) return
+
+    const next = scope()
+    if (active === next) return
+
+    const prev = active
+    if (prev) {
+      promptState.save(prev, snapshot())
+      promptState.unbind(prev, ref)
+    }
+
+    active = next
+
+    const draft = promptState.load(next)
+    if (draft) {
+      restorePrompt(draft)
+    } else if (!prev) {
+      const prompt = snapshot()
+      if (prompt.input || prompt.parts.length > 0) {
+        promptState.save(next, prompt)
+      } else {
+        clearPrompt("normal")
+      }
+    } else {
+      clearPrompt("normal")
+    }
+
+    promptState.bind(next, ref)
+  })
+
   onCleanup(() => {
+    if (active) {
+      promptState.save(active, snapshot())
+      promptState.unbind(active, ref)
+    }
     props.ref?.(undefined)
   })
 
@@ -538,17 +630,15 @@ export function Prompt(props: PromptProps) {
       title: "Stash prompt",
       value: "prompt.stash",
       category: "Prompt",
-      enabled: !!store.prompt.input,
+      enabled: !!store.prompt.input || store.prompt.parts.length > 0,
       onSelect: (dialog) => {
-        if (!store.prompt.input) return
+        const prompt = snapshot()
+        if (!prompt.input && prompt.parts.length === 0) return
         stash.push({
-          input: store.prompt.input,
-          parts: store.prompt.parts,
+          input: prompt.input,
+          parts: prompt.parts,
         })
-        input.extmarks.clear()
-        input.clear()
-        setStore("prompt", { input: "", parts: [] })
-        setStore("extmarkToPartIndex", new Map())
+        ref.reset()
         dialog.clear()
       },
     },
@@ -589,17 +679,13 @@ export function Prompt(props: PromptProps) {
   ])
 
   async function submit() {
-    // IME: double-defer may fire before onContentChange flushes the last
-    // composed character (e.g. Korean hangul) to the store, so read
-    // plainText directly and sync before any downstream reads.
-    if (input && !input.isDestroyed && input.plainText !== store.prompt.input) {
-      setStore("prompt", "input", input.plainText)
-      syncExtmarksWithPromptParts()
-    }
+    const prompt = snapshot()
+
     if (props.disabled) return
     if (autocomplete?.visible) return
-    if (!store.prompt.input) return
-    const trimmed = store.prompt.input.trim()
+    if (!prompt.input) return
+
+    const trimmed = prompt.input.trim()
     if (trimmed === "exit" || trimmed === "quit" || trimmed === ":q") {
       exit()
       return
@@ -631,7 +717,7 @@ export function Prompt(props: PromptProps) {
     }
 
     const messageID = MessageID.ascending()
-    let inputText = store.prompt.input
+    let inputText = prompt.input
 
     // Expand pasted text inline before submitting
     const allExtmarks = input.extmarks.getAllForTypeId(promptPartTypeId)
@@ -640,7 +726,7 @@ export function Prompt(props: PromptProps) {
     for (const extmark of sortedExtmarks) {
       const partIndex = store.extmarkToPartIndex.get(extmark.id)
       if (partIndex !== undefined) {
-        const part = store.prompt.parts[partIndex]
+        const part = prompt.parts[partIndex]
         if (part?.type === "text" && part.text) {
           const before = inputText.slice(0, extmark.start)
           const after = inputText.slice(extmark.end)
@@ -650,13 +736,13 @@ export function Prompt(props: PromptProps) {
     }
 
     // Filter out text parts (pasted content) since they're now expanded inline
-    const nonTextParts = store.prompt.parts.filter((part) => part.type !== "text")
+    const nonTextParts = prompt.parts.filter((part) => part.type !== "text")
 
     // Capture mode before it gets reset
-    const currentMode = store.mode
+    const currentMode = prompt.mode ?? "normal"
     const variant = local.model.variant.current()
 
-    if (store.mode === "shell") {
+    if (currentMode === "shell") {
       sdk.client.session.shell({
         sessionID,
         agent: local.agent.current().name,
@@ -717,16 +803,11 @@ export function Prompt(props: PromptProps) {
         })
         .catch(() => {})
     }
-    history.append({
-      ...store.prompt,
-      mode: currentMode,
-    })
-    input.extmarks.clear()
-    setStore("prompt", {
-      input: "",
-      parts: [],
-    })
-    setStore("extmarkToPartIndex", new Map())
+    history.append(prompt)
+    clearPrompt()
+    if (active) {
+      promptState.drop(active)
+    }
     props.onSubmit?.()
 
     // temporary hack to make sure the message is sent
@@ -737,7 +818,6 @@ export function Prompt(props: PromptProps) {
           sessionID,
         })
       }, 50)
-    input.clear()
   }
   const exit = useExit()
 
@@ -944,14 +1024,8 @@ export function Prompt(props: PromptProps) {
                   }
                   // If no image, let the default paste behavior continue
                 }
-                if (keybind.match("input_clear", e) && store.prompt.input !== "") {
-                  input.clear()
-                  input.extmarks.clear()
-                  setStore("prompt", {
-                    input: "",
-                    parts: [],
-                  })
-                  setStore("extmarkToPartIndex", new Map())
+                if (keybind.match("input_clear", e) && (store.prompt.input !== "" || store.prompt.parts.length > 0)) {
+                  ref.reset()
                   return
                 }
                 if (keybind.match("app_exit", e)) {
@@ -1090,6 +1164,7 @@ export function Prompt(props: PromptProps) {
                 if (promptPartTypeId === 0) {
                   promptPartTypeId = input.extmarks.registerType("prompt-part")
                 }
+                setReady(true)
                 props.ref?.(ref)
                 setTimeout(() => {
                   // setTimeout is a workaround and needs to be addressed properly

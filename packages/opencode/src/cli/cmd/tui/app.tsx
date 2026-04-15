@@ -55,7 +55,7 @@ import { KVProvider, useKV } from "./context/kv"
 import { Provider } from "@/provider/provider"
 import { ArgsProvider, useArgs, type Args } from "./context/args"
 import open from "open"
-import { PromptRefProvider, usePromptRef } from "./context/prompt"
+import { homeScope, PromptRefProvider, sessionScope, usePromptRef } from "./context/prompt"
 import { TuiConfigProvider, useTuiConfig } from "./context/tui-config"
 import { TuiConfig } from "@/config/tui"
 import { createTuiApi, TuiPluginRuntime, type RouteMap } from "./plugin"
@@ -195,6 +195,7 @@ export function tui(input: {
 function App(props: { onSnapshot?: () => Promise<string[]> }) {
   const tuiConfig = useTuiConfig()
   const route = useRoute()
+  const project = useProject()
   const dimensions = useTerminalDimensions()
   const renderer = useRenderer()
   const dialog = useDialog()
@@ -416,9 +417,13 @@ function App(props: { onSnapshot?: () => Promise<string[]> }) {
         aliases: ["clear"],
       },
       onSelect: () => {
-        const current = promptRef.current
-        // Don't require focus - if there's any text, preserve it
-        const currentPrompt = current?.current?.input ? current.current : undefined
+        const currentPrompt =
+          route.data.type === "session" ? promptRef.current(sessionScope(route.data.sessionID)) : undefined
+
+        if (currentPrompt) {
+          promptRef.apply(homeScope(project.workspace.current()), currentPrompt)
+        }
+
         route.navigate({
           type: "home",
           initialPrompt: currentPrompt,

@@ -1,45 +1,63 @@
 import { Prompt, type PromptRef } from "@tui/component/prompt"
-import { createEffect, createSignal } from "solid-js"
+import { createEffect, createMemo, createSignal } from "solid-js"
 import { Logo } from "../component/logo"
 import { useProject } from "../context/project"
 import { useSync } from "../context/sync"
 import { Toast } from "../ui/toast"
 import { useArgs } from "../context/args"
 import { useRouteData } from "@tui/context/route"
-import { usePromptRef } from "../context/prompt"
+import { homeScope, usePromptRef } from "../context/prompt"
 import { useLocal } from "../context/local"
 import { TuiPluginRuntime } from "../plugin"
 
-// TODO: what is the best way to do this?
-let once = false
+let startup = false
 const placeholder = {
   normal: ["Fix a TODO in the codebase", "What is the tech stack of this project?", "Fix broken tests"],
   shell: ["ls -la", "git status", "pwd"],
 }
+
+type Ref = Pick<PromptRef, "current" | "submit">
 
 export function Home() {
   const sync = useSync()
   const project = useProject()
   const route = useRouteData("home")
   const promptRef = usePromptRef()
-  const [ref, setRef] = createSignal<PromptRef | undefined>()
+  const [ref, setRef] = createSignal<Ref | undefined>()
   const args = useArgs()
   const local = useLocal()
+  const scope = createMemo(() => homeScope(project.workspace.current()))
   let sent = false
+  let seeded: string | undefined
 
-  const bind = (r: PromptRef | undefined) => {
+  const bind = (r: Ref | undefined) => {
     setRef(r)
-    promptRef.set(r)
-    if (once || !r) return
-    if (route.initialPrompt) {
-      r.set(route.initialPrompt)
-      once = true
+  }
+
+  createEffect(() => {
+    const key = scope()
+    if (seeded === key) return
+
+    if (promptRef.current(key)) {
+      if (route.initialPrompt) {
+        seeded = key
+        startup = true
+      }
       return
     }
-    if (!args.prompt) return
-    r.set({ input: args.prompt, parts: [] })
-    once = true
-  }
+
+    if (route.initialPrompt) {
+      promptRef.apply(key, route.initialPrompt)
+      seeded = key
+      startup = true
+      return
+    }
+
+    if (startup || !args.prompt) return
+
+    promptRef.apply(key, { input: args.prompt, parts: [] })
+    startup = true
+  })
 
   // Wait for sync and model store to be ready before auto-submitting --prompt
   createEffect(() => {
