@@ -426,7 +426,6 @@ function App(props: { onSnapshot?: () => Promise<string[]> }) {
 
         route.navigate({
           type: "home",
-          initialPrompt: currentPrompt,
         })
         dialog.clear()
       },

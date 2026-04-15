@@ -25,6 +25,11 @@ export type PromptInfo = {
   )[]
 }
 
+export type PromptDraft = {
+  prompt: PromptInfo
+  cursor: number
+}
+
 const MAX_HISTORY_ENTRIES = 50
 
 export const { use: usePromptHistory, provider: PromptHistoryProvider } = createSimpleContext({

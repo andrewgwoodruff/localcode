@@ -15,7 +15,7 @@ import { homeScope, sessionScope, usePromptRef } from "@tui/context/prompt"
 import { MessageID, PartID } from "@/session/schema"
 import { createStore, produce, unwrap } from "solid-js/store"
 import { useKeybind } from "@tui/context/keybind"
-import { usePromptHistory, type PromptInfo } from "./history"
+import { usePromptHistory, type PromptDraft, type PromptInfo } from "./history"
 import { assign } from "./part"
 import { usePromptStash } from "./stash"
 import { DialogStash } from "../dialog-stash"
@@ -58,7 +58,8 @@ export type PromptProps = {
 export type PromptRef = {
   focused: boolean
   current: PromptInfo
-  snapshot(): PromptInfo
+  snapshot(): PromptDraft
+  restore(draft: PromptDraft): void
   set(prompt: PromptInfo): void
   reset(): void
   blur(): void
@@ -421,16 +422,16 @@ export function Prompt(props: PromptProps) {
     }
   }
 
-  function restorePrompt(prompt: PromptInfo) {
-    const next = structuredClone(unwrap(prompt))
-    input.setText(next.input)
-    setStore("mode", next.mode ?? "normal")
+  function restorePrompt(draft: PromptDraft) {
+    const next = structuredClone(unwrap(draft))
+    input.setText(next.prompt.input)
+    setStore("mode", next.prompt.mode ?? "normal")
     setStore("prompt", {
-      input: next.input,
-      parts: next.parts,
+      input: next.prompt.input,
+      parts: next.prompt.parts,
     })
-    restoreExtmarksFromParts(next.parts)
-    input.gotoBufferEnd()
+    restoreExtmarksFromParts(next.prompt.parts)
+    input.cursorOffset = next.cursor
   }
 
   function snapshot() {
@@ -444,10 +445,13 @@ export function Prompt(props: PromptProps) {
     }
 
     return {
-      input: value,
-      mode: store.mode,
-      parts: structuredClone(unwrap(store.prompt.parts)),
-    } satisfies PromptInfo
+      prompt: {
+        input: value,
+        mode: store.mode,
+        parts: structuredClone(unwrap(store.prompt.parts)),
+      },
+      cursor: input && !input.isDestroyed ? input.cursorOffset : Bun.stringWidth(value),
+    } satisfies PromptDraft
   }
 
   const ref: PromptRef = {
@@ -464,6 +468,12 @@ export function Prompt(props: PromptProps) {
     snapshot() {
       return snapshot()
     },
+    restore(draft) {
+      restorePrompt(draft)
+      if (active) {
+        promptState.save(active, draft)
+      }
+    },
     focus() {
       input.focus()
     },
@@ -471,10 +481,10 @@ export function Prompt(props: PromptProps) {
       input.blur()
     },
     set(prompt) {
-      restorePrompt(prompt)
-      if (active) {
-        promptState.save(active, snapshot())
-      }
+      ref.restore({
+        prompt: structuredClone(unwrap(prompt)),
+        cursor: Bun.stringWidth(prompt.input),
+      })
     },
     reset() {
       clearPrompt()
@@ -496,32 +506,24 @@ export function Prompt(props: PromptProps) {
     const prev = active
     if (prev) {
       promptState.save(prev, snapshot())
-      promptState.unbind(prev, ref)
+      promptState.bind(prev, undefined)
     }
 
     active = next
+    promptState.bind(next, ref)
 
     const draft = promptState.load(next)
     if (draft) {
-      restorePrompt(draft)
-    } else if (!prev) {
-      const prompt = snapshot()
-      if (prompt.input || prompt.parts.length > 0) {
-        promptState.save(next, prompt)
-      } else {
-        clearPrompt("normal")
-      }
+      ref.restore(draft)
     } else {
       clearPrompt("normal")
     }
-
-    promptState.bind(next, ref)
   })
 
   onCleanup(() => {
     if (active) {
       promptState.save(active, snapshot())
-      promptState.unbind(active, ref)
+      promptState.bind(active, undefined)
     }
     props.ref?.(undefined)
   })
@@ -633,10 +635,10 @@ export function Prompt(props: PromptProps) {
       enabled: !!store.prompt.input || store.prompt.parts.length > 0,
       onSelect: (dialog) => {
         const prompt = snapshot()
-        if (!prompt.input && prompt.parts.length === 0) return
+        if (!prompt.prompt.input && prompt.prompt.parts.length === 0) return
         stash.push({
-          input: prompt.input,
-          parts: prompt.parts,
+          input: prompt.prompt.input,
+          parts: prompt.prompt.parts,
         })
         ref.reset()
         dialog.clear()
@@ -650,10 +652,7 @@ export function Prompt(props: PromptProps) {
       onSelect: (dialog) => {
         const entry = stash.pop()
         if (entry) {
-          input.setText(entry.input)
-          setStore("prompt", { input: entry.input, parts: entry.parts })
-          restoreExtmarksFromParts(entry.parts)
-          input.gotoBufferEnd()
+          ref.set({ input: entry.input, parts: entry.parts })
         }
         dialog.clear()
       },
@@ -667,10 +666,7 @@ export function Prompt(props: PromptProps) {
         dialog.replace(() => (
           <DialogStash
             onSelect={(entry) => {
-              input.setText(entry.input)
-              setStore("prompt", { input: entry.input, parts: entry.parts })
-              restoreExtmarksFromParts(entry.parts)
-              input.gotoBufferEnd()
+              ref.set({ input: entry.input, parts: entry.parts })
             }}
           />
         ))
@@ -683,9 +679,9 @@ export function Prompt(props: PromptProps) {
 
     if (props.disabled) return
     if (autocomplete?.visible) return
-    if (!prompt.input) return
+    if (!prompt.prompt.input) return
 
-    const trimmed = prompt.input.trim()
+    const trimmed = prompt.prompt.input.trim()
     if (trimmed === "exit" || trimmed === "quit" || trimmed === ":q") {
       exit()
       return
@@ -717,7 +713,7 @@ export function Prompt(props: PromptProps) {
     }
 
     const messageID = MessageID.ascending()
-    let inputText = prompt.input
+    let inputText = prompt.prompt.input
 
     // Expand pasted text inline before submitting
     const allExtmarks = input.extmarks.getAllForTypeId(promptPartTypeId)
@@ -726,7 +722,7 @@ export function Prompt(props: PromptProps) {
     for (const extmark of sortedExtmarks) {
       const partIndex = store.extmarkToPartIndex.get(extmark.id)
       if (partIndex !== undefined) {
-        const part = prompt.parts[partIndex]
+        const part = prompt.prompt.parts[partIndex]
         if (part?.type === "text" && part.text) {
           const before = inputText.slice(0, extmark.start)
           const after = inputText.slice(extmark.end)
@@ -736,10 +732,10 @@ export function Prompt(props: PromptProps) {
     }
 
     // Filter out text parts (pasted content) since they're now expanded inline
-    const nonTextParts = prompt.parts.filter((part) => part.type !== "text")
+    const nonTextParts = prompt.prompt.parts.filter((part) => part.type !== "text")
 
     // Capture mode before it gets reset
-    const currentMode = prompt.mode ?? "normal"
+    const currentMode = prompt.prompt.mode ?? "normal"
     const variant = local.model.variant.current()
 
     if (currentMode === "shell") {
@@ -803,7 +799,7 @@ export function Prompt(props: PromptProps) {
         })
         .catch(() => {})
     }
-    history.append(prompt)
+    history.append(prompt.prompt)
     clearPrompt()
     if (active) {
       promptState.drop(active)
