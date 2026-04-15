@@ -504,8 +504,9 @@ export function Prompt(props: PromptProps) {
     if (active === next) return
 
     const prev = active
+    const prevDraft = prev ? snapshot() : undefined
     if (prev) {
-      promptState.save(prev, snapshot())
+      promptState.save(prev, prevDraft!)
       promptState.bind(prev, undefined)
     }
 
@@ -515,9 +516,25 @@ export function Prompt(props: PromptProps) {
     const draft = promptState.load(next)
     if (draft) {
       ref.restore(draft)
-    } else {
-      clearPrompt("normal")
+      return
     }
+
+    const carry =
+      prev &&
+      prev.startsWith("session:") &&
+      next.startsWith("session:") &&
+      route.data.type === "session" &&
+      props.sessionID === route.data.sessionID &&
+      !route.data.initialPrompt &&
+      prevDraft &&
+      (prevDraft.prompt.input || prevDraft.prompt.parts.length > 0)
+
+    if (carry) {
+      ref.restore(prevDraft)
+      return
+    }
+
+    clearPrompt("normal")
   })
 
   onCleanup(() => {
