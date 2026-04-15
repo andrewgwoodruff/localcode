@@ -1,4 +1,5 @@
 import { createSimpleContext } from "./helper"
+import { unwrap } from "solid-js/store"
 import type { PromptRef } from "../component/prompt"
 import type { PromptInfo } from "../component/prompt/history"
 
@@ -12,7 +13,7 @@ export function sessionScope(sessionID: string) {
 }
 
 function clone(prompt: PromptInfo) {
-  return structuredClone(prompt)
+  return structuredClone(unwrap(prompt))
 }
 
 function empty(prompt?: PromptInfo) {
