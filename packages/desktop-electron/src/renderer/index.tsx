@@ -337,8 +337,6 @@ render(() => {
       }
     })
 
-    throw new Error("Test2")
-
     return null
   }
 
