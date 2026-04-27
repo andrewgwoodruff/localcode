@@ -1,6 +1,5 @@
 import path from "path"
 import os from "os"
-import z from "zod"
 import * as EffectZod from "@/util/effect-zod"
 import { SessionID, MessageID, PartID } from "./schema"
 import { MessageV2 } from "./message-v2"
@@ -1275,7 +1274,7 @@ NOTE: At any point in time through this workflow you should feel free to ask the
       function* (sessionID: SessionID) {
         const ctx = yield* InstanceState.context
         const slog = elog.with({ sessionID })
-        let structured: unknown | undefined
+        let structured: unknown
         let step = 0
         const session = yield* sessions.get(sessionID)
 
@@ -1456,6 +1455,7 @@ NOTE: At any point in time through this workflow you should feel free to ask the
               parentSessionID: session.parentID,
               system,
               messages: [...modelMsgs, ...(isLastStep ? [{ role: "assistant" as const, content: MAX_STEPS }] : [])],
+              nativeMessages: msgs,
               tools,
               model,
               toolChoice: format.type === "json_schema" ? "required" : undefined,
