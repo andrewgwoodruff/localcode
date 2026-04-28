@@ -112,7 +112,7 @@ export async function disposeWebHandler() {
   try {
     await current.dispose()
   } finally {
-    if (webHandler.peek() === current) webHandler.reset()
+    webHandler.resetIf(current)
   }
 }
 

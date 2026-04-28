@@ -1,5 +1,6 @@
-import { Layer, ManagedRuntime } from "effect"
+import { Layer } from "effect"
 import { attach } from "./run-service"
+import { makeManagedRuntime } from "./managed-runtime"
 import * as Observability from "@opencode-ai/core/effect/observability"
 
 import { AppFileSystem } from "@opencode-ai/core/filesystem"
@@ -47,8 +48,6 @@ import { Installation } from "@/installation"
 import { ShareNext } from "@/share/share-next"
 import { SessionShare } from "@/share/session"
 import { Npm } from "@opencode-ai/core/npm"
-import { memoMap } from "@opencode-ai/core/effect/memo-map"
-import { lazy } from "@/util/lazy"
 
 export const AppLayer = Layer.mergeAll(
   Npm.defaultLayer,
@@ -98,33 +97,15 @@ export const AppLayer = Layer.mergeAll(
   SessionShare.defaultLayer,
 ).pipe(Layer.provideMerge(Observability.layer))
 
-const rt = lazy(() => ManagedRuntime.make(AppLayer, { memoMap }))
+const rt = makeManagedRuntime(AppLayer)
 type Runtime = Pick<ReturnType<typeof rt>, "runSync" | "runPromise" | "runPromiseExit" | "runFork" | "runCallback" | "dispose">
 const wrap = (effect: Parameters<ReturnType<typeof rt>["runSync"]>[0]) => attach(effect as never) as never
 
 export const AppRuntime: Runtime = {
-  runSync(effect) {
-    return rt().runSync(wrap(effect))
-  },
-  runPromise(effect, options) {
-    return rt().runPromise(wrap(effect), options)
-  },
-  runPromiseExit(effect, options) {
-    return rt().runPromiseExit(wrap(effect), options)
-  },
-  runFork(effect) {
-    return rt().runFork(wrap(effect))
-  },
-  runCallback(effect) {
-    return rt().runCallback(wrap(effect))
-  },
-  async dispose() {
-    const current = rt.peek()
-    if (!current) return
-    try {
-      await current.dispose()
-    } finally {
-      if (rt.peek() === current) rt.reset()
-    }
-  },
+  runSync: (effect) => rt().runSync(wrap(effect)),
+  runPromise: (effect, options) => rt().runPromise(wrap(effect), options),
+  runPromiseExit: (effect, options) => rt().runPromiseExit(wrap(effect), options),
+  runFork: (effect) => rt().runFork(wrap(effect)),
+  runCallback: (effect) => rt().runCallback(wrap(effect)),
+  dispose: rt.dispose,
 }

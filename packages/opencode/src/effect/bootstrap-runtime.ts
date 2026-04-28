@@ -1,4 +1,4 @@
-import { Layer, ManagedRuntime } from "effect"
+import { Layer } from "effect"
 
 import { Plugin } from "@/plugin"
 import { LSP } from "@/lsp/lsp"
@@ -10,9 +10,8 @@ import { Vcs } from "@/project/vcs"
 import { Snapshot } from "@/snapshot"
 import { Bus } from "@/bus"
 import { Config } from "@/config/config"
-import { lazy } from "@/util/lazy"
+import { makeManagedRuntime } from "./managed-runtime"
 import * as Observability from "@opencode-ai/core/effect/observability"
-import { memoMap } from "@opencode-ai/core/effect/memo-map"
 
 export const BootstrapLayer = Layer.mergeAll(
   Config.defaultLayer,
@@ -27,20 +26,10 @@ export const BootstrapLayer = Layer.mergeAll(
   Bus.defaultLayer,
 ).pipe(Layer.provide(Observability.layer))
 
-const rt = lazy(() => ManagedRuntime.make(BootstrapLayer, { memoMap }))
+const rt = makeManagedRuntime(BootstrapLayer)
 type Runtime = Pick<ReturnType<typeof rt>, "runPromise" | "dispose">
 
 export const BootstrapRuntime: Runtime = {
-  runPromise(effect, options) {
-    return rt().runPromise(effect, options)
-  },
-  async dispose() {
-    const current = rt.peek()
-    if (!current) return
-    try {
-      await current.dispose()
-    } finally {
-      if (rt.peek() === current) rt.reset()
-    }
-  },
+  runPromise: (effect, options) => rt().runPromise(effect, options),
+  dispose: rt.dispose,
 }
