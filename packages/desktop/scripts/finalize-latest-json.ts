@@ -29,17 +29,15 @@ const root = dir
 const token = process.env.GH_TOKEN ?? process.env.GITHUB_TOKEN
 if (!token) throw new Error("GH_TOKEN or GITHUB_TOKEN is required")
 
-const apiHeaders = {
-  Authorization: `token ${token}`,
-  Accept: "application/vnd.github+json",
-}
-
-const releaseRes = await fetch(`https://api.github.com/repos/${repo}/releases/${releaseId}`, {
-  headers: apiHeaders,
+const rel = await fetch(`https://api.github.com/repos/${repo}/releases/${releaseId}`, {
+  headers: {
+    Authorization: `token ${token}`,
+    Accept: "application/vnd.github+json",
+  },
 })
 
-if (!releaseRes.ok) {
-  throw new Error(`Failed to fetch release: ${releaseRes.status} ${releaseRes.statusText}`)
+if (!rel.ok) {
+  throw new Error(`Failed to fetch release: ${rel.status} ${rel.statusText}`)
 }
 
 type Asset = {
@@ -50,14 +48,6 @@ type Asset = {
 type Release = {
   assets?: Asset[]
 }
-
-const rel = await fetch(`https://api.github.com/repos/${repo}/releases/tags/v${version}`, {
-  headers: {
-    Authorization: `token ${token}`,
-    Accept: "application/vnd.github+json",
-  },
-})
-if (!rel.ok) throw new Error(`Failed to fetch release: ${rel.status} ${rel.statusText}`)
 
 const assets = ((await rel.json()) as Release).assets ?? []
 const amap = new Map(assets.map((item) => [item.name, item]))
