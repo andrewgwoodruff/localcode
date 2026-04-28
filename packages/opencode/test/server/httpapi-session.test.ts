@@ -10,6 +10,10 @@ import { SessionPaths } from "../../src/server/routes/instance/httpapi/session"
 import { Session } from "@/session/session"
 import { MessageID, PartID, type SessionID } from "../../src/session/schema"
 import { MessageV2 } from "../../src/session/message-v2"
+import { SessionMessage } from "../../src/v2/session-message"
+import { SessionMessageTable } from "../../src/session/session.sql"
+import * as Database from "../../src/storage/db"
+import * as DateTime from "effect/DateTime"
 import * as Log from "@opencode-ai/core/util/log"
 import { resetDatabase } from "../fixture/db"
 import { tmpdir } from "../fixture/fixture"
@@ -68,7 +72,7 @@ async function createTextMessage(directory: string, sessionID: SessionID, text: 
 }
 
 async function json<T>(response: Response) {
-  if (response.status !== 200) throw new Error(await response.text())
+  if (response.status !== 200) throw new Error(`Unexpected ${response.status}: ${await response.text()}`)
   return (await response.json()) as T
 }
 
@@ -145,6 +149,41 @@ describe("session HttpApi", () => {
         }),
       ),
     ).toMatchObject({ info: { id: message.info.id } })
+
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const message = new SessionMessage.Assistant({
+          id: SessionMessage.ID.create(),
+          type: "assistant",
+          time: { created: DateTime.makeUnsafe(1) },
+          content: [],
+        })
+        Database.use((db) =>
+          db
+            .insert(SessionMessageTable)
+            .values([
+              {
+                id: message.id,
+                session_id: parent.id,
+                type: message.type,
+                time_created: 1,
+                data: {
+                  time: { created: 1 },
+                  content: message.content,
+                } as NonNullable<typeof SessionMessageTable.$inferInsert["data"]>,
+              },
+            ])
+            .run(),
+        )
+      },
+    })
+
+    expect(
+      await json<SessionMessage.Message[]>(
+        await app().request(`/api/session/${parent.id}/message`, { headers }),
+      ),
+    ).toMatchObject([{ type: "assistant" }])
   })
 
   test("serves lifecycle mutation routes through Hono bridge", async () => {
