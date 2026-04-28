@@ -1,4 +1,5 @@
 import { TextField } from "@opencode-ai/ui/text-field"
+import * as Sentry from "@sentry/solid"
 import { Logo } from "@opencode-ai/ui/logo"
 import { Button } from "@opencode-ai/ui/button"
 import { Component, Show } from "solid-js"
@@ -270,10 +271,16 @@ export const ErrorPage: Component<ErrorPageProps> = (props) => {
           label={language.t("error.page.details.label")}
           hideLabel
         />
-        <div class="flex items-center gap-3">
+        <div class="flex flex-row items-center justify-center gap-3 flex-wrap max-w-64">
           <Button size="large" onClick={platform.restart}>
             {language.t("error.page.action.restart")}
           </Button>
+          <Show when={Sentry.isEnabled}>
+            <Button size="large" onClick={() => Sentry.captureException(props.error)}>
+              Report Error
+              {/*{language.t("error.page.action.restart")}*/}
+            </Button>
+          </Show>
           <Show when={platform.checkUpdate}>
             <Show
               when={store.version}
