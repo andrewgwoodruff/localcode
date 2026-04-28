@@ -2,7 +2,7 @@ import { TextField } from "@opencode-ai/ui/text-field"
 import * as Sentry from "@sentry/solid"
 import { Logo } from "@opencode-ai/ui/logo"
 import { Button } from "@opencode-ai/ui/button"
-import { Component, Show } from "solid-js"
+import { Component, createSignal, Show } from "solid-js"
 import { createStore } from "solid-js/store"
 import { usePlatform } from "@/context/platform"
 import { useLanguage } from "@/context/language"
@@ -276,10 +276,21 @@ export const ErrorPage: Component<ErrorPageProps> = (props) => {
             {language.t("error.page.action.restart")}
           </Button>
           <Show when={Sentry.isEnabled}>
-            <Button size="large" onClick={() => Sentry.captureException(props.error)}>
-              Report Error
-              {/*{language.t("error.page.action.restart")}*/}
-            </Button>
+            {(_) => {
+              const [reported, setReported] = createSignal(false)
+              return (
+                <Button
+                  size="large"
+                  disabled={reported()}
+                  onClick={() => {
+                    Sentry.captureException(props.error)
+                    setReported(true)
+                  }}
+                >
+                  {language.t(reported() ? "error.page.action.reported" : "error.page.action.report")}
+                </Button>
+              )
+            }}
           </Show>
           <Show when={platform.checkUpdate}>
             <Show
