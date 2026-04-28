@@ -134,8 +134,10 @@ async function sign(url: string, key: string) {
   const tmp = process.env.RUNNER_TEMP ?? "/tmp"
   const file = path.join(tmp, name)
   await Bun.write(file, await res.arrayBuffer())
-  const out = await $`bunx @tauri-apps/cli signer sign ${file}`.text()
-  return out.trim()
+  await $`bunx @tauri-apps/cli signer sign ${file}`
+  const sigFile = Bun.file(`${file}.sig`)
+  if (!(await sigFile.exists())) throw new Error(`Signature file not found for ${name}`)
+  return (await sigFile.text()).trim()
 }
 
 const add = async (data: Record<string, { url: string; signature: string }>, key: string, raw: string | undefined) => {
