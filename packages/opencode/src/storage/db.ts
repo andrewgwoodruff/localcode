@@ -44,7 +44,7 @@ export const Path = iife(() => {
 
 export type Transaction = SQLiteTransaction<"sync", void>
 
-type Client = SQLiteBunDatabase
+export type Client = SQLiteBunDatabase
 
 type Journal = { sql: string; timestamp: number; name: string }[]
 
@@ -81,7 +81,7 @@ function migrations(dir: string): Journal {
   return sql.sort((a, b) => a.timestamp - b.timestamp)
 }
 
-export const Client = lazy(() => {
+export function open() {
   log.info("opening database", { path: Path })
 
   const db = init(Path)
@@ -112,11 +112,42 @@ export const Client = lazy(() => {
   }
 
   return db
-})
+}
 
-export function close() {
-  Client().$client.close()
-  Client.reset()
+export const Client = lazy(open)
+
+let layerRefs = 0
+let layerOwner: Client | undefined
+
+export function acquire() {
+  const owner = Client.peek() === undefined
+  const client = Client()
+  if (owner) layerOwner = client
+  layerRefs++
+
+  let released = false
+  return {
+    client,
+    release() {
+      if (released) return
+      released = true
+      layerRefs--
+      if (layerRefs === 0 && layerOwner === client) {
+        layerOwner = undefined
+        close(client)
+      }
+    },
+  }
+}
+
+export function close(client = Client.peek()) {
+  if (!client) return
+  client.$client.close()
+  if (Client.peek() === client) {
+    layerRefs = 0
+    layerOwner = undefined
+    Client.reset()
+  }
 }
 
 export type TxOrDb = Transaction | Client
@@ -132,7 +163,8 @@ export function use<T>(callback: (trx: TxOrDb) => T): T {
   } catch (err) {
     if (err instanceof LocalContext.NotFound) {
       const effects: (() => void | Promise<void>)[] = []
-      const result = ctx.provide({ effects, tx: Client() }, () => callback(Client()))
+      const client = Client()
+      const result = ctx.provide({ effects, tx: client }, () => callback(client))
       for (const effect of effects) effect()
       return result
     }
