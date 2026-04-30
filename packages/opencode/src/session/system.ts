@@ -33,13 +33,9 @@ export function provider(model: Provider.Model) {
   return [PROMPT_DEFAULT]
 }
 
-function isAnthropicModel(model: Provider.Model) {
-  return model.providerID === "anthropic" || model.api.id.includes("claude")
-}
-
 export interface Interface {
   readonly environment: (model: Provider.Model) => string[]
-  readonly skills: (agent: Agent.Info, model: Provider.Model) => Effect.Effect<string | undefined>
+  readonly skills: (agent: Agent.Info) => Effect.Effect<string | undefined>
 }
 
 export class Service extends Context.Service<Service, Interface>()("@opencode/SystemPrompt") {}
@@ -68,12 +64,12 @@ export const layer = Layer.effect(
         ]
       },
 
-      skills: Effect.fn("SystemPrompt.skills")(function* (agent: Agent.Info, model: Provider.Model) {
+      skills: Effect.fn("SystemPrompt.skills")(function* (agent: Agent.Info) {
         if (Permission.disabled(["skill"], agent.permission).has("skill")) return
 
         const list = yield* skill.available(agent)
         const cfg = yield* config.get()
-        const format = cfg.skills?.format ?? (isAnthropicModel(model) ? "xml" : "json")
+        const format = cfg.skills?.format ?? "xml"
 
         return [
           "Skills provide specialized instructions and workflows for specific tasks.",
