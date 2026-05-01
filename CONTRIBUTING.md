@@ -53,15 +53,24 @@ To run OpenCode in the root of the opencode repo itself:
 bun dev .
 ```
 
-### Building a "localcode"
+### Building and installing locally
 
-To compile a standalone executable:
+To build and install the binary to `~/.opencode/bin/opencode` in one step:
+
+```bash
+cd packages/opencode
+bun run install-local
+```
+
+This builds for your current platform and copies the binary to your local install path. Run it any time you want to pick up local changes.
+
+To just compile without installing:
 
 ```bash
 ./packages/opencode/script/build.ts --single
 ```
 
-Then run it with:
+Then run it directly with:
 
 ```bash
 ./packages/opencode/dist/opencode-<platform>/bin/opencode
