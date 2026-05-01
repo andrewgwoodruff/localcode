@@ -72,7 +72,11 @@ const elog = EffectLogger.create({ service: "session.prompt" })
 
 // Detect when a local model wrote tool-call JSON in its text output instead of
 // emitting a proper tool-call part. Returns the tool name if found.
+// Handles two formats:
+//   1. {"name":"toolname","arguments":{...}} — full tool call JSON
+//   2. Raw argument objects like {"pattern":"...","path":"..."} — infer tool from keys
 function detectEmbeddedToolCallName(text: string): string | null {
+  // Format 1: full tool call JSON with "name" + "arguments"/"parameters"
   const nameRegex = /"name"\s*:\s*"([^"]+)"/g
   let match: RegExpExecArray | null
   while ((match = nameRegex.exec(text)) !== null) {
@@ -81,6 +85,21 @@ function detectEmbeddedToolCallName(text: string): string | null {
       return match[1]
     }
   }
+
+  // Format 2: raw argument objects — model outputs just the args dict
+  const jsonRegex = /\{[^{}]{10,500}\}/g
+  let jsonMatch: RegExpExecArray | null
+  while ((jsonMatch = jsonRegex.exec(text)) !== null) {
+    try {
+      const parsed = JSON.parse(jsonMatch[0]) as Record<string, unknown>
+      if ("filePath" in parsed) return "read"
+      if ("pattern" in parsed && "include" in parsed) return "grep"
+      if ("pattern" in parsed && "path" in parsed) return "grep"
+      if ("pattern" in parsed) return "glob"
+      if ("command" in parsed) return "bash"
+    } catch {}
+  }
+
   return null
 }
 
