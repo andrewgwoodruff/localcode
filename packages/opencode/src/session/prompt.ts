@@ -1345,23 +1345,47 @@ NOTE: At any point in time through this workflow you should feel free to ask the
           const hasToolCalls =
             lastAssistantMsg?.parts.some((part) => part.type === "tool" && !part.metadata?.providerExecuted) ?? false
 
-          // Check for embedded tool calls regardless of whether real tool calls happened.
-          // The model often calls glob/grep, then describes the NEXT tool call as JSON in
-          // text (hasToolCalls=true from the first call, so the old check missed this).
+          // Log loop state on every iteration to diagnose nudge firing issues
+          yield* slog.info("loop-state", {
+            step,
+            nudgeCount,
+            lastAssistantFinish: lastAssistant?.finish ?? "(none)",
+            lastAssistantId: lastAssistant?.id ?? "(none)",
+            lastUserId: lastUser.id,
+            idOrderCorrect: lastAssistant ? lastUser.id < lastAssistant.id : "(no assistant yet)",
+            hasToolCalls,
+            partCount: lastAssistantMsg?.parts.length ?? 0,
+            textPartCount: lastAssistantMsg?.parts.filter((p) => p.type === "text").length ?? 0,
+          })
+
+          // Check for embedded tool calls in ALL recent assistant messages (since the last
+          // user message). The model often writes the embedded JSON in turn N (alongside a
+          // real tool call) and then turn N+1 produces almost no text — so scanning only the
+          // last assistant message misses the embedded JSON entirely.
           if (
             lastAssistant?.finish &&
             !["tool-calls"].includes(lastAssistant.finish) &&
             lastUser.id < lastAssistant.id &&
             nudgeCount < 3
           ) {
-            const assistantText = lastAssistantMsg?.parts
-              .filter((p) => p.type === "text")
-              .map((p) => (p as MessageV2.TextPart).text)
-              .join("")
-            const embeddedTool = detectEmbeddedToolCallName(assistantText ?? "")
+            const recentAssistantText = msgs
+              .filter((m) => m.info.role === "assistant" && m.info.id > lastUser.id)
+              .flatMap((m) =>
+                m.parts
+                  .filter((p) => p.type === "text" || p.type === "reasoning")
+                  .map((p) => (p as MessageV2.TextPart | MessageV2.ReasoningPart).text),
+              )
+              .join("\n")
+            const embeddedTool = detectEmbeddedToolCallName(recentAssistantText)
+            yield* slog.info("nudge-check", {
+              conditionPassed: true,
+              assistantTextLength: recentAssistantText.length,
+              assistantTextSnippet: recentAssistantText.slice(-300),
+              embeddedTool: embeddedTool ?? "(none)",
+            })
             if (embeddedTool) {
               nudgeCount++
-              yield* slog.info("detected embedded tool call in text, nudging", { tool: embeddedTool, nudgeCount })
+              yield* slog.info("nudging", { tool: embeddedTool, nudgeCount })
               const nudgeMsg: MessageV2.User = {
                 id: MessageID.ascending(),
                 sessionID,
@@ -1383,6 +1407,19 @@ NOTE: At any point in time through this workflow you should feel free to ask the
               yield* sessions.updatePart(nudgePart)
               continue
             }
+          } else {
+            yield* slog.info("nudge-check", {
+              conditionPassed: false,
+              reason: !lastAssistant?.finish
+                ? "no finish"
+                : ["tool-calls"].includes(lastAssistant.finish ?? "")
+                  ? "finish=tool-calls"
+                  : !(lastUser.id < lastAssistant!.id)
+                    ? "id order wrong"
+                    : nudgeCount >= 3
+                      ? "nudge limit reached"
+                      : "unknown",
+            })
           }
 
           if (
