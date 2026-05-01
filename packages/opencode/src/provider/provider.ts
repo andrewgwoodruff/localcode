@@ -28,6 +28,12 @@ import { withStatics } from "@/util/schema"
 
 import * as ProviderTransform from "./transform"
 import { ModelID, ProviderID } from "./schema"
+import {
+  getOpenAICompatibleToolParsers,
+  rewriteOpenAICompatibleJsonResponse,
+  rewriteOpenAICompatibleRequestBody,
+  rewriteOpenAICompatibleStreamResponse,
+} from "./openai-compatible-compat"
 
 const log = Log.create({ service: "provider" })
 
@@ -1404,7 +1410,11 @@ const layer: Layer.Layer<
           delete options.fetch
         }
 
-        if (model.api.npm.includes("@ai-sdk/openai-compatible") && options["includeUsage"] !== false) {
+        if (
+          model.api.npm.includes("@ai-sdk/openai-compatible") &&
+          options["includeUsage"] === undefined &&
+          provider.source !== "config"
+        ) {
           options["includeUsage"] = true
         }
 
@@ -1450,6 +1460,9 @@ const layer: Layer.Layer<
         const customFetch = options["fetch"]
         const chunkTimeout = options["chunkTimeout"]
         delete options["chunkTimeout"]
+        const toolParsers = model.api.npm.includes("@ai-sdk/openai-compatible")
+          ? getOpenAICompatibleToolParsers(options)
+          : []
 
         options["fetch"] = async (input: any, init?: BunFetchRequestInit) => {
           const fetchFn = customFetch ?? fetch
@@ -1480,14 +1493,49 @@ const layer: Layer.Layer<
             }
           }
 
+          // Rewrite request body for tool parsers
+          if (toolParsers.length > 0 && opts.body && opts.method === "POST") {
+            try {
+              const body = JSON.parse(opts.body as string)
+              opts.body = JSON.stringify(rewriteOpenAICompatibleRequestBody(body, toolParsers))
+            } catch {}
+          }
+
           const res = await fetchFn(input, {
             ...opts,
             // @ts-ignore see here: https://github.com/oven-sh/bun/issues/16682
             timeout: false,
           })
 
-          if (!chunkAbortCtl) return res
-          return wrapSSE(res, chunkTimeout, chunkAbortCtl)
+          if (toolParsers.length === 0) {
+            if (!chunkAbortCtl) return res
+            return wrapSSE(res, chunkTimeout, chunkAbortCtl)
+          }
+
+          // With tool parsers: buffer and rewrite response
+          const headers = new Headers(res.headers)
+          headers.delete("content-length")
+          const contentType = headers.get("content-type") ?? ""
+          if (contentType.includes("text/event-stream")) {
+            const text = await res.text()
+            return new Response(rewriteOpenAICompatibleStreamResponse(text, toolParsers), {
+              status: res.status,
+              statusText: res.statusText,
+              headers,
+            })
+          }
+          if (contentType.includes("application/json")) {
+            const text = await res.text()
+            try {
+              return new Response(
+                JSON.stringify(rewriteOpenAICompatibleJsonResponse(JSON.parse(text), toolParsers)),
+                { status: res.status, statusText: res.statusText, headers },
+              )
+            } catch {
+              return new Response(text, { status: res.status, statusText: res.statusText, headers })
+            }
+          }
+          return res
         }
 
         const bundledLoader = BUNDLED_PROVIDERS[model.api.npm]

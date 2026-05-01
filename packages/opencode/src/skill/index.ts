@@ -261,29 +261,38 @@ export const defaultLayer = layer.pipe(
   Layer.provide(AppFileSystem.defaultLayer),
 )
 
-export function fmt(list: Info[], opts: { verbose: boolean }) {
+export function fmt(list: Info[], opts: { format: "xml" | "json" | "markdown" }) {
   if (list.length === 0) return "No skills are currently available."
-  if (opts.verbose) {
+  const sorted = list.toSorted((a, b) => a.name.localeCompare(b.name))
+  if (opts.format === "json") {
+    return JSON.stringify(
+      {
+        available_skills: sorted.map((skill) => ({
+          name: skill.name,
+          description: skill.description,
+          location: pathToFileURL(skill.location).href,
+        })),
+      },
+      null,
+      2,
+    )
+  }
+  if (opts.format === "xml") {
     return [
       "<available_skills>",
-      ...list
-        .sort((a, b) => a.name.localeCompare(b.name))
-        .flatMap((skill) => [
-          "  <skill>",
-          `    <name>${skill.name}</name>`,
-          `    <description>${skill.description}</description>`,
-          `    <location>${pathToFileURL(skill.location).href}</location>`,
-          "  </skill>",
-        ]),
+      ...sorted.flatMap((skill) => [
+        "  <skill>",
+        `    <name>${skill.name}</name>`,
+        `    <description>${skill.description}</description>`,
+        `    <location>${pathToFileURL(skill.location).href}</location>`,
+        "  </skill>",
+      ]),
       "</available_skills>",
     ].join("\n")
   }
-
   return [
     "## Available Skills",
-    ...list
-      .toSorted((a, b) => a.name.localeCompare(b.name))
-      .map((skill) => `- **${skill.name}**: ${skill.description}`),
+    ...sorted.map((skill) => `- **${skill.name}**: ${skill.description}`),
   ].join("\n")
 }
 

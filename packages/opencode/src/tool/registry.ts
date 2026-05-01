@@ -257,7 +257,7 @@ export const layer: Layer.Layer<
         "The following skills provide specialized sets of instructions for particular tasks",
         "Invoke this tool to load a skill when a task matches one of the available skills listed below:",
         "",
-        Skill.fmt(list, { verbose: false }),
+        Skill.fmt(list, { format: "markdown" }),
       ].join("\n")
     })
 

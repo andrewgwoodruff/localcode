@@ -70,6 +70,20 @@ const STRUCTURED_OUTPUT_SYSTEM_PROMPT = `IMPORTANT: The user has requested struc
 const log = Log.create({ service: "session.prompt" })
 const elog = EffectLogger.create({ service: "session.prompt" })
 
+// Detect when a local model wrote tool-call JSON in its text output instead of
+// emitting a proper tool-call part. Returns the tool name if found.
+function detectEmbeddedToolCallName(text: string): string | null {
+  const nameRegex = /"name"\s*:\s*"([^"]+)"/g
+  let match: RegExpExecArray | null
+  while ((match = nameRegex.exec(text)) !== null) {
+    const surrounding = text.slice(Math.max(0, match.index - 100), match.index + 400)
+    if (/["']arguments["']\s*:/.test(surrounding) || /["']parameters["']\s*:/.test(surrounding)) {
+      return match[1]
+    }
+  }
+  return null
+}
+
 export interface Interface {
   readonly cancel: (sessionID: SessionID) => Effect.Effect<void>
   readonly prompt: (input: PromptInput) => Effect.Effect<MessageV2.WithParts>
@@ -1277,6 +1291,7 @@ NOTE: At any point in time through this workflow you should feel free to ask the
         const slog = elog.with({ sessionID })
         let structured: unknown | undefined
         let step = 0
+        let nudgeCount = 0
         const session = yield* sessions.get(sessionID)
 
         while (true) {
@@ -1317,6 +1332,38 @@ NOTE: At any point in time through this workflow you should feel free to ask the
             !hasToolCalls &&
             lastUser.id < lastAssistant.id
           ) {
+            // Check if the model described a tool call in text instead of calling it
+            if (nudgeCount < 3) {
+              const assistantText = lastAssistantMsg?.parts
+                .filter((p) => p.type === "text")
+                .map((p) => (p as MessageV2.TextPart).text)
+                .join("")
+              const embeddedTool = detectEmbeddedToolCallName(assistantText ?? "")
+              if (embeddedTool) {
+                nudgeCount++
+                yield* slog.info("detected embedded tool call in text, nudging", { tool: embeddedTool, nudgeCount })
+                const nudgeMsg: MessageV2.User = {
+                  id: MessageID.ascending(),
+                  sessionID,
+                  role: "user",
+                  time: { created: Date.now() },
+                  agent: lastUser.agent,
+                  model: lastUser.model,
+                }
+                yield* sessions.updateMessage(nudgeMsg)
+                const nudgePart: MessageV2.TextPart = {
+                  id: PartID.ascending(),
+                  messageID: nudgeMsg.id,
+                  sessionID,
+                  type: "text",
+                  text: `You described calling the "${embeddedTool}" tool in your response text but did not actually call it. You must invoke the tool directly — do not write tool calls as text or JSON.`,
+                  synthetic: true,
+                  time: { start: Date.now(), end: Date.now() },
+                }
+                yield* sessions.updatePart(nudgePart)
+                continue
+              }
+            }
             yield* slog.info("exiting loop")
             break
           }
