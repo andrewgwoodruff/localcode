@@ -1345,44 +1345,52 @@ NOTE: At any point in time through this workflow you should feel free to ask the
           const hasToolCalls =
             lastAssistantMsg?.parts.some((part) => part.type === "tool" && !part.metadata?.providerExecuted) ?? false
 
+          // Check for embedded tool calls regardless of whether real tool calls happened.
+          // The model often calls glob/grep, then describes the NEXT tool call as JSON in
+          // text (hasToolCalls=true from the first call, so the old check missed this).
+          if (
+            lastAssistant?.finish &&
+            !["tool-calls"].includes(lastAssistant.finish) &&
+            lastUser.id < lastAssistant.id &&
+            nudgeCount < 3
+          ) {
+            const assistantText = lastAssistantMsg?.parts
+              .filter((p) => p.type === "text")
+              .map((p) => (p as MessageV2.TextPart).text)
+              .join("")
+            const embeddedTool = detectEmbeddedToolCallName(assistantText ?? "")
+            if (embeddedTool) {
+              nudgeCount++
+              yield* slog.info("detected embedded tool call in text, nudging", { tool: embeddedTool, nudgeCount })
+              const nudgeMsg: MessageV2.User = {
+                id: MessageID.ascending(),
+                sessionID,
+                role: "user",
+                time: { created: Date.now() },
+                agent: lastUser.agent,
+                model: lastUser.model,
+              }
+              yield* sessions.updateMessage(nudgeMsg)
+              const nudgePart: MessageV2.TextPart = {
+                id: PartID.ascending(),
+                messageID: nudgeMsg.id,
+                sessionID,
+                type: "text",
+                text: `You described calling the "${embeddedTool}" tool in your response text but did not actually call it. You must invoke the tool directly — do not write tool calls as text or JSON.`,
+                synthetic: true,
+                time: { start: Date.now(), end: Date.now() },
+              }
+              yield* sessions.updatePart(nudgePart)
+              continue
+            }
+          }
+
           if (
             lastAssistant?.finish &&
             !["tool-calls"].includes(lastAssistant.finish) &&
             !hasToolCalls &&
             lastUser.id < lastAssistant.id
           ) {
-            // Check if the model described a tool call in text instead of calling it
-            if (nudgeCount < 3) {
-              const assistantText = lastAssistantMsg?.parts
-                .filter((p) => p.type === "text")
-                .map((p) => (p as MessageV2.TextPart).text)
-                .join("")
-              const embeddedTool = detectEmbeddedToolCallName(assistantText ?? "")
-              if (embeddedTool) {
-                nudgeCount++
-                yield* slog.info("detected embedded tool call in text, nudging", { tool: embeddedTool, nudgeCount })
-                const nudgeMsg: MessageV2.User = {
-                  id: MessageID.ascending(),
-                  sessionID,
-                  role: "user",
-                  time: { created: Date.now() },
-                  agent: lastUser.agent,
-                  model: lastUser.model,
-                }
-                yield* sessions.updateMessage(nudgeMsg)
-                const nudgePart: MessageV2.TextPart = {
-                  id: PartID.ascending(),
-                  messageID: nudgeMsg.id,
-                  sessionID,
-                  type: "text",
-                  text: `You described calling the "${embeddedTool}" tool in your response text but did not actually call it. You must invoke the tool directly — do not write tool calls as text or JSON.`,
-                  synthetic: true,
-                  time: { start: Date.now(), end: Date.now() },
-                }
-                yield* sessions.updatePart(nudgePart)
-                continue
-              }
-            }
             yield* slog.info("exiting loop")
             break
           }
