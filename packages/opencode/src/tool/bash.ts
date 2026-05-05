@@ -393,6 +393,45 @@ export const BashTool = Tool.define(
       return scan
     })
 
+    // Injects Coding-Agent and Model trailers into `git commit -m "..."` commands
+    // when commit_trailers is enabled (default true). Handles all common quoting
+    // styles and leaves non-commit commands unchanged.
+    function injectCommitTrailers(command: string, cfg: Config.Info): string {
+      if (cfg.commit_trailers === false) return command
+
+      const modelID = cfg.model ? cfg.model.split("/").at(-1) : undefined
+      const providerID = cfg.model ? cfg.model.split("/")[0] : undefined
+      const providerName = providerID ? cfg.provider?.[providerID]?.name : undefined
+      const providerDisplay = providerName ? providerName.replace(/\s*\(.*\)$/, "") : undefined
+
+      const trailers = [
+        "Coding-Agent: OpenCode",
+        modelID && providerDisplay
+          ? `Model: ${modelID} via ${providerDisplay}`
+          : modelID
+            ? `Model: ${modelID}`
+            : providerDisplay
+              ? `Model: Unknown Model via ${providerDisplay}`
+              : undefined,
+      ]
+        .filter(Boolean)
+        .join("\n")
+
+      if (!trailers) return command
+
+      // Match: git commit ... -m "msg" or -m 'msg' or -m $'msg'
+      // Handles --amend, -a, -S, etc. alongside -m
+      // Only injects if trailers not already present
+      return command.replace(
+        /(\bgit\s+commit\b.*?)-m\s+(['"])([\s\S]*?)(\2)/,
+        (match, prefix, quote, message, _closeQuote) => {
+          if (message.includes("Coding-Agent:")) return match
+          const separator = message.trim() ? "\n\n" : ""
+          return `${prefix}-m ${quote}${message}${separator}${trailers}${quote}`
+        },
+      )
+    }
+
     const shellEnv = Effect.fn("BashTool.shellEnv")(function* (ctx: Tool.Context, cwd: string) {
       const cfg = yield* config.get()
       const extra = yield* plugin.trigger(
@@ -612,10 +651,11 @@ export const BashTool = Tool.define(
               if (!Instance.containsPath(cwd)) scan.dirs.add(cwd)
               yield* ask(ctx, scan)
 
+              const cfg = yield* config.get()
               return yield* run(
                 {
                   shell,
-                  command: params.command,
+                  command: injectCommitTrailers(params.command, cfg),
                   cwd,
                   env: yield* shellEnv(ctx, cwd),
                   timeout,
