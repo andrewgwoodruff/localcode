@@ -394,15 +394,18 @@ export const BashTool = Tool.define(
     })
 
     const shellEnv = Effect.fn("BashTool.shellEnv")(function* (ctx: Tool.Context, cwd: string) {
+      const cfg = yield* config.get()
       const extra = yield* plugin.trigger(
         "shell.env",
         { cwd, sessionID: ctx.sessionID, callID: ctx.callID },
         { env: {} },
       )
-      return {
+      const env: NodeJS.ProcessEnv = {
         ...process.env,
         ...extra.env,
       }
+      if (cfg.model) env["OPENCODE_MODEL"] = cfg.model
+      return env
     })
 
     const run = Effect.fn("BashTool.run")(function* (
