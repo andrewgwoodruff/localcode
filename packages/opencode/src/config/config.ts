@@ -147,6 +147,37 @@ export const Info = Schema.Struct({
   small_model: Schema.optional(ConfigModelID).annotate({
     description: "Small model to use for tasks like title generation in the format of provider/model",
   }),
+  reasoning: Schema.optional(
+    Schema.Struct({
+      default_variant: Schema.optional(Schema.String).annotate({
+        description:
+          "Default reasoning/thinking variant applied to every model that exposes one (e.g. 'low', 'high', 'max', 'no-thinking'). Lower precedence than agent.options and per-message --variant.",
+      }),
+      providers: Schema.optional(
+        Schema.Record(
+          Schema.String,
+          Schema.Struct({
+            default_variant: Schema.optional(Schema.String),
+          }),
+        ).annotate({
+          description: "Per-provider reasoning overrides keyed by provider id (e.g. 'qwen', 'anthropic').",
+        }),
+      ),
+      models: Schema.optional(
+        Schema.Record(
+          Schema.String,
+          Schema.Struct({
+            default_variant: Schema.optional(Schema.String),
+          }),
+        ).annotate({
+          description: "Per-model reasoning overrides keyed by 'provider/model' id.",
+        }),
+      ),
+    }),
+  ).annotate({
+    description:
+      "Reasoning/thinking-mode controls. Precedence (low → high): provider defaults < model.options < reasoning.default_variant < reasoning.providers[id] < reasoning.models[id] < agent.options < per-message --variant.",
+  }),
   default_agent: Schema.optional(Schema.String).annotate({
     description:
       "Default agent to use when none is specified. Must be a primary agent. Falls back to 'build' if not set or if the specified agent is invalid.",

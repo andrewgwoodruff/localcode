@@ -123,10 +123,22 @@ const live: Layer.Layer<
         system.push(header, rest.join("\n"))
       }
 
-      const variant =
-        !input.small && input.model.variants && input.user.model.variant
-          ? input.model.variants[input.user.model.variant]
-          : {}
+      const lookupVariant = (name: string | undefined) =>
+        !input.small && name && input.model.variants ? (input.model.variants[name] ?? {}) : {}
+
+      // Per-message / CLI --variant has highest priority among variants.
+      const explicitVariant = lookupVariant(input.user.model.variant)
+
+      // Global config-driven defaults (lowest precedence among reasoning controls):
+      // models[provider/model] > providers[provider] > top-level default_variant
+      const modelKey = `${input.model.providerID}/${input.model.id}`
+      const configVariantName = input.user.model.variant
+        ? undefined
+        : (cfg.reasoning?.models?.[modelKey]?.default_variant ??
+          cfg.reasoning?.providers?.[input.model.providerID]?.default_variant ??
+          cfg.reasoning?.default_variant)
+      const configVariant = lookupVariant(configVariantName)
+
       const base = input.small
         ? ProviderTransform.smallOptions(input.model)
         : ProviderTransform.options({
@@ -137,8 +149,9 @@ const live: Layer.Layer<
       const options: Record<string, any> = pipe(
         base,
         mergeDeep(input.model.options),
+        mergeDeep(configVariant),
         mergeDeep(input.agent.options),
-        mergeDeep(variant),
+        mergeDeep(explicitVariant),
       )
       if (isOpenaiOauth) {
         options.instructions = system.join("\n")

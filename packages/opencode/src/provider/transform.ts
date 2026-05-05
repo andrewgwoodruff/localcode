@@ -442,6 +442,18 @@ export function variants(model: Provider.Model): Record<string, Record<string, a
 
   const id = model.id.toLowerCase()
   const adaptiveEfforts = anthropicAdaptiveEfforts(model.api.id)
+  // Qwen3-family thinking control. Most openai-compatible runtimes serving
+  // Qwen3 (vLLM, SGLang, MLX-LM server) honor `enable_thinking` via
+  // chat_template_kwargs in the request body. We expose `thinking` and
+  // `no-thinking` variants that toggle it. Users on other runtimes can
+  // override these in their model config.
+  if (id.includes("qwen") && (id.includes("qwen3") || id.includes("qwen-3"))) {
+    return {
+      thinking: { extraBody: { chat_template_kwargs: { enable_thinking: true } } },
+      "no-thinking": { extraBody: { chat_template_kwargs: { enable_thinking: false } } },
+    }
+  }
+
   if (
     id.includes("deepseek-chat") ||
     id.includes("deepseek-reasoner") ||
