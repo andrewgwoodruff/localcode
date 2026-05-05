@@ -1,5 +1,5 @@
 {
-  "name": "@opencode-ai/slack",
+  "name": "@localcode/slack",
   "version": "1.14.29",
   "type": "module",
   "license": "MIT",

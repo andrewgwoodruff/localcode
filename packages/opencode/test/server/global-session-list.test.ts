@@ -4,7 +4,7 @@ import z from "zod"
 import { Instance } from "../../src/project/instance"
 import { Project } from "@/project/project"
 import { Session as SessionNs } from "@/session/session"
-import * as Log from "@opencode-ai/core/util/log"
+import * as Log from "@localcode/core/util/log"
 import { tmpdir } from "../fixture/fixture"
 
 void Log.init({ print: false })

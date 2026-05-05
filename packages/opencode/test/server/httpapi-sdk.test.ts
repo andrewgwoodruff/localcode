@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test"
-import { Flag } from "@opencode-ai/core/flag/flag"
+import { Flag } from "@localcode/core/flag/flag"
 import { createOpencodeClient } from "@opencode-ai/sdk/v2"
 import { ExperimentalHttpApiServer } from "../../src/server/routes/instance/httpapi/server"
 import path from "path"

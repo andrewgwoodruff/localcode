@@ -31,10 +31,10 @@ import {
   type Usage,
 } from "@agentclientprotocol/sdk"
 
-import * as Log from "@opencode-ai/core/util/log"
+import * as Log from "@localcode/core/util/log"
 import { pathToFileURL } from "url"
 import { Filesystem } from "@/util/filesystem"
-import { Hash } from "@opencode-ai/core/util/hash"
+import { Hash } from "@localcode/core/util/hash"
 import { ACPSessionManager } from "./session"
 import type { ACPConfig } from "./types"
 import { Provider } from "@/provider/provider"
@@ -50,7 +50,7 @@ import { Result, Schema } from "effect"
 import { LoadAPIKeyError } from "ai"
 import type { AssistantMessage, Event, OpencodeClient, SessionMessageResponse, ToolPart } from "@opencode-ai/sdk/v2"
 import { applyPatch } from "diff"
-import { InstallationVersion } from "@opencode-ai/core/installation/version"
+import { InstallationVersion } from "@localcode/core/installation/version"
 
 type ModeOption = { id: string; name: string; description?: string }
 type ModelOption = { modelId: string; name: string }

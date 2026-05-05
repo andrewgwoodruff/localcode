@@ -1,6 +1,6 @@
 import { Auth } from "@/auth"
 import { ProviderID } from "@/provider/schema"
-import * as Log from "@opencode-ai/core/util/log"
+import * as Log from "@localcode/core/util/log"
 import { Effect, Schema } from "effect"
 import { HttpApi, HttpApiBuilder, HttpApiEndpoint, HttpApiGroup, OpenApi } from "effect/unstable/httpapi"
 

@@ -1,11 +1,11 @@
 import { afterEach, describe, expect, test } from "bun:test"
 import { Effect } from "effect"
-import { Flag } from "@opencode-ai/core/flag/flag"
+import { Flag } from "@localcode/core/flag/flag"
 import { Instance } from "../../src/project/instance"
 import { Server } from "../../src/server/server"
 import { SyncPaths } from "../../src/server/routes/instance/httpapi/sync"
 import { Session } from "@/session/session"
-import * as Log from "@opencode-ai/core/util/log"
+import * as Log from "@localcode/core/util/log"
 import { resetDatabase } from "../fixture/db"
 import { tmpdir } from "../fixture/fixture"
 

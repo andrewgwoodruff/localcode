@@ -1,13 +1,13 @@
-import { Global } from "@opencode-ai/core/global"
-import * as Log from "@opencode-ai/core/util/log"
+import { Global } from "@localcode/core/global"
+import * as Log from "@localcode/core/util/log"
 import path from "path"
 import { Schema } from "effect"
 import { Installation } from "../installation"
-import { Flag } from "@opencode-ai/core/flag/flag"
+import { Flag } from "@localcode/core/flag/flag"
 import { lazy } from "@/util/lazy"
 import { Filesystem } from "@/util/filesystem"
-import { Flock } from "@opencode-ai/core/util/flock"
-import { Hash } from "@opencode-ai/core/util/hash"
+import { Flock } from "@localcode/core/util/flock"
+import { Hash } from "@localcode/core/util/hash"
 
 // Try to import bundled snapshot (generated at build time)
 // Falls back to undefined in dev mode when snapshot doesn't exist

@@ -1,5 +1,5 @@
 {
-  "name": "@opencode-ai/desktop-electron",
+  "name": "@localcode/desktop-electron",
   "private": true,
   "version": "1.14.29",
   "type": "module",
@@ -36,8 +36,8 @@
   "devDependencies": {
     "@actions/artifact": "4.0.0",
     "@lydell/node-pty": "catalog:",
-    "@opencode-ai/app": "workspace:*",
-    "@opencode-ai/ui": "workspace:*",
+    "@localcode/app": "workspace:*",
+    "@localcode/ui": "workspace:*",
     "@solid-primitives/i18n": "2.2.1",
     "@solid-primitives/storage": "catalog:",
     "@solidjs/meta": "catalog:",

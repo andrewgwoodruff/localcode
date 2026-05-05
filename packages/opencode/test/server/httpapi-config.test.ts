@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, test } from "bun:test"
 import path from "path"
-import { Flag } from "@opencode-ai/core/flag/flag"
+import { Flag } from "@localcode/core/flag/flag"
 import { GlobalBus } from "@/bus/global"
 import { Instance } from "../../src/project/instance"
 import { Server } from "../../src/server/server"
-import * as Log from "@opencode-ai/core/util/log"
+import * as Log from "@localcode/core/util/log"
 import { resetDatabase } from "../fixture/db"
 import { tmpdir } from "../fixture/fixture"
 

@@ -9,7 +9,7 @@ import { Config } from "@/config/config"
 import { Command } from "@/command"
 import { AppRuntime } from "@/effect/app-runtime"
 import { InstanceRef, WorkspaceRef } from "@/effect/instance-ref"
-import * as Observability from "@opencode-ai/core/effect/observability"
+import * as Observability from "@localcode/core/effect/observability"
 import { File } from "@/file"
 import { Ripgrep } from "@/file/ripgrep"
 import { Format } from "@/format"
@@ -54,7 +54,7 @@ import { SyncApi, syncHandlers } from "./sync"
 import { TuiApi, tuiHandlers } from "./tui"
 import { WorkspaceApi, workspaceHandlers } from "./workspace"
 import { disposeMiddleware } from "./lifecycle"
-import { memoMap } from "@opencode-ai/core/effect/memo-map"
+import { memoMap } from "@localcode/core/effect/memo-map"
 
 const Query = Schema.Struct({
   directory: Schema.optional(Schema.String),

@@ -1,4 +1,4 @@
-import { getFilename } from "@opencode-ai/core/util/path"
+import { getFilename } from "@localcode/core/util/path"
 import { type Session } from "@opencode-ai/sdk/v2/client"
 
 type SessionStore = {
