@@ -1,19 +1,10 @@
 <p align="center">
-  <a href="https://opencode.ai">
-    <picture>
-      <source srcset="packages/console/app/src/asset/logo-ornate-dark.svg" media="(prefers-color-scheme: dark)">
-      <source srcset="packages/console/app/src/asset/logo-ornate-light.svg" media="(prefers-color-scheme: light)">
-      <img src="packages/console/app/src/asset/logo-ornate-light.svg" alt="LocalCode logo">
-    </picture>
-  </a>
+  <img src="assets/logo.png" alt="LocalCode" width="390">
 </p>
 <p align="center">The open source AI coding agent.</p>
 <p align="center">
-  <a href="https://opencode.ai/discord"><img alt="Discord" src="https://img.shields.io/discord/1391832426048651334?style=flat-square&label=discord" /></a>
   <a href="https://github.com/andrewgwoodruff/localcode/actions/workflows/publish.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/andrewgwoodruff/localcode/publish.yml?style=flat-square&branch=dev" /></a>
 </p>
-
-[![LocalCode Terminal UI](packages/web/src/assets/lander/screenshot.png)](https://opencode.ai)
 
 ---
 
@@ -45,12 +36,6 @@ LocalCode includes two built-in agents you can switch between with the `Tab` key
 Also included is a **general** subagent for complex searches and multistep tasks.
 This is used internally and can be invoked using `@general` in messages.
 
-Learn more about [agents](https://opencode.ai/docs/agents).
-
-### Documentation
-
-For more info on how to configure LocalCode, [**head over to the opencode docs**](https://opencode.ai/docs).
-
 ### Contributing
 
 If you're interested in contributing, please read our [contributing docs](./CONTRIBUTING.md) before submitting a pull request.
@@ -69,4 +54,6 @@ It's very similar to Claude Code in terms of capability. Here are the key differ
 
 ---
 
-**Upstream project:** [opencode](https://opencode.ai) | [GitHub](https://github.com/anomalyco/opencode)
+### Acknowledgments
+
+LocalCode is a fork of [opencode](https://github.com/anomalyco/opencode) by anomalyco.
