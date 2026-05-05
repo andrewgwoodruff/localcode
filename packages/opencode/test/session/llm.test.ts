@@ -395,6 +395,151 @@ describe("session.llm.stream", () => {
     })
   })
 
+  test("config-driven reasoning.default_variant is applied when no per-message variant is set", async () => {
+    const server = state.server
+    if (!server) throw new Error("Server not initialized")
+
+    const providerID = "vivgrid"
+    const modelID = "gemini-3.1-pro-preview"
+    const fixture = await loadFixture(providerID, modelID)
+    const model = fixture.model
+
+    const request = waitRequest(
+      "/chat/completions",
+      new Response(createChatStream("ok"), {
+        status: 200,
+        headers: { "Content-Type": "text/event-stream" },
+      }),
+    )
+
+    await using tmp = await tmpdir({
+      init: async (dir) => {
+        await Bun.write(
+          path.join(dir, "opencode.json"),
+          JSON.stringify({
+            $schema: "https://opencode.ai/config.json",
+            enabled_providers: [providerID],
+            reasoning: { default_variant: "low" },
+            provider: {
+              [providerID]: {
+                options: { apiKey: "test-key", baseURL: `${server.url.origin}/v1` },
+              },
+            },
+          }),
+        )
+      },
+    })
+
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const resolved = await getModel(ProviderID.make(providerID), ModelID.make(model.id))
+        const sessionID = SessionID.make("session-test-default-variant")
+        const agent = {
+          name: "test",
+          mode: "primary",
+          options: {},
+          permission: [{ permission: "*", pattern: "*", action: "allow" }],
+        } satisfies Agent.Info
+        const user = {
+          id: MessageID.make("user-default-variant"),
+          sessionID,
+          role: "user",
+          time: { created: Date.now() },
+          agent: agent.name,
+          // NB: no `variant` field — config default should fill in
+          model: { providerID: ProviderID.make(providerID), modelID: resolved.id },
+        } satisfies MessageV2.User
+
+        await drain({
+          user,
+          sessionID,
+          model: resolved,
+          agent,
+          system: ["sys"],
+          messages: [{ role: "user", content: "Hello" }],
+          tools: {},
+        })
+
+        const body = (await request).body
+        const reasoning = (body.reasoningEffort as string | undefined) ?? (body.reasoning_effort as string | undefined)
+        expect(reasoning).toBe("low")
+      },
+    })
+  })
+
+  test("per-message variant takes precedence over reasoning.default_variant", async () => {
+    const server = state.server
+    if (!server) throw new Error("Server not initialized")
+
+    const providerID = "vivgrid"
+    const modelID = "gemini-3.1-pro-preview"
+    const fixture = await loadFixture(providerID, modelID)
+    const model = fixture.model
+
+    const request = waitRequest(
+      "/chat/completions",
+      new Response(createChatStream("ok"), {
+        status: 200,
+        headers: { "Content-Type": "text/event-stream" },
+      }),
+    )
+
+    await using tmp = await tmpdir({
+      init: async (dir) => {
+        await Bun.write(
+          path.join(dir, "opencode.json"),
+          JSON.stringify({
+            $schema: "https://opencode.ai/config.json",
+            enabled_providers: [providerID],
+            reasoning: { default_variant: "low" },
+            provider: {
+              [providerID]: {
+                options: { apiKey: "test-key", baseURL: `${server.url.origin}/v1` },
+              },
+            },
+          }),
+        )
+      },
+    })
+
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const resolved = await getModel(ProviderID.make(providerID), ModelID.make(model.id))
+        const sessionID = SessionID.make("session-test-explicit-wins")
+        const agent = {
+          name: "test",
+          mode: "primary",
+          options: {},
+          permission: [{ permission: "*", pattern: "*", action: "allow" }],
+        } satisfies Agent.Info
+        const user = {
+          id: MessageID.make("user-explicit-wins"),
+          sessionID,
+          role: "user",
+          time: { created: Date.now() },
+          agent: agent.name,
+          model: { providerID: ProviderID.make(providerID), modelID: resolved.id, variant: "high" },
+        } satisfies MessageV2.User
+
+        await drain({
+          user,
+          sessionID,
+          model: resolved,
+          agent,
+          system: ["sys"],
+          messages: [{ role: "user", content: "Hello" }],
+          tools: {},
+        })
+
+        const body = (await request).body
+        const reasoning = (body.reasoningEffort as string | undefined) ?? (body.reasoning_effort as string | undefined)
+        expect(reasoning).toBe("high")
+      },
+    })
+  })
+
   test("service stream cancellation cancels provider response body promptly", async () => {
     const server = state.server
     if (!server) throw new Error("Server not initialized")

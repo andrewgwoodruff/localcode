@@ -543,6 +543,49 @@ function App(props: { onSnapshot?: () => Promise<string[]> }) {
       },
     },
     {
+      title: "Turn thinking on",
+      value: "variant.think",
+      category: "Agent",
+      hidden: !local.model.variant.list().includes("thinking"),
+      slash: {
+        name: "think",
+      },
+      onSelect: () => {
+        if (!local.model.variant.list().includes("thinking")) {
+          toast.show({
+            variant: "info",
+            message: "This model doesn't have a thinking toggle. Tune via reasoning config for fine-grained control.",
+            duration: 4000,
+          })
+          return
+        }
+        local.model.variant.set("thinking")
+        toast.show({ variant: "info", message: "Thinking on for this session", duration: 2000 })
+      },
+    },
+    {
+      title: "Turn thinking off",
+      value: "variant.no_think",
+      category: "Agent",
+      hidden: !local.model.variant.list().includes("no-thinking"),
+      slash: {
+        name: "no-think",
+        aliases: ["nothink", "no_think"],
+      },
+      onSelect: () => {
+        if (!local.model.variant.list().includes("no-thinking")) {
+          toast.show({
+            variant: "info",
+            message: "This model doesn't have a no-thinking toggle. Tune via reasoning config for fine-grained control.",
+            duration: 4000,
+          })
+          return
+        }
+        local.model.variant.set("no-thinking")
+        toast.show({ variant: "info", message: "Thinking off for this session", duration: 2000 })
+      },
+    },
+    {
       title: "Agent cycle reverse",
       value: "agent.cycle.reverse",
       keybind: "agent_cycle_reverse",
