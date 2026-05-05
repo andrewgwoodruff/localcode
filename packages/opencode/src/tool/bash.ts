@@ -405,7 +405,7 @@ export const BashTool = Tool.define(
       const providerDisplay = providerName ? providerName.replace(/\s*\(.*\)$/, "") : undefined
 
       const trailers = [
-        "Coding-Agent: OpenCode",
+        "Coding-Agent: LocalCode",
         modelID && providerDisplay
           ? `Model: ${modelID} via ${providerDisplay}`
           : modelID

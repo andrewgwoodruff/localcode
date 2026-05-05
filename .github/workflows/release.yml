@@ -35,5 +35,5 @@ jobs:
           OPENCODE_VERSION: ${{ steps.version.outputs.version }}
           OPENCODE_CHANNEL: latest
           OPENCODE_RELEASE: "true"
-          GH_REPO: andrewgwoodruff/opencode
+          GH_REPO: andrewgwoodruff/localcode
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
