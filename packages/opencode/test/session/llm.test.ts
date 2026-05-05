@@ -415,9 +415,8 @@ describe("session.llm.stream", () => {
     await using tmp = await tmpdir({
       init: async (dir) => {
         await Bun.write(
-          path.join(dir, "opencode.json"),
+          path.join(dir, "localcode.json"),
           JSON.stringify({
-            $schema: "https://opencode.ai/config.json",
             enabled_providers: [providerID],
             reasoning: { default_variant: "low" },
             provider: {
@@ -488,9 +487,8 @@ describe("session.llm.stream", () => {
     await using tmp = await tmpdir({
       init: async (dir) => {
         await Bun.write(
-          path.join(dir, "opencode.json"),
+          path.join(dir, "localcode.json"),
           JSON.stringify({
-            $schema: "https://opencode.ai/config.json",
             enabled_providers: [providerID],
             reasoning: { default_variant: "low" },
             provider: {
