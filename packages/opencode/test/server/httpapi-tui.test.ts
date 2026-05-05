@@ -13,10 +13,10 @@ import { tmpdir } from "../fixture/fixture"
 
 void Log.init({ print: false })
 
-const original = Flag.OPENCODE_EXPERIMENTAL_HTTPAPI
+const original = Flag.LOCALCODE_EXPERIMENTAL_HTTPAPI
 
 function app() {
-  Flag.OPENCODE_EXPERIMENTAL_HTTPAPI = true
+  Flag.LOCALCODE_EXPERIMENTAL_HTTPAPI = true
   return Server.Default().app
 }
 
@@ -31,7 +31,7 @@ async function expectTrue(path: string, headers: Record<string, string>, body?: 
 }
 
 afterEach(async () => {
-  Flag.OPENCODE_EXPERIMENTAL_HTTPAPI = original
+  Flag.LOCALCODE_EXPERIMENTAL_HTTPAPI = original
   await Instance.disposeAll()
   await resetDatabase()
 })

@@ -32,12 +32,12 @@ export function setWslConfig(config: WslConfig) {
 
 export async function spawnLocalServer(hostname: string, port: number, password: string) {
   prepareServerEnv(password)
-  const { Log, Server } = await import("virtual:opencode-server")
+  const { Log, Server } = await import("virtual:localcode-server")
   await Log.init({ level: "WARN" })
   const listener = await Server.listen({
     port,
     hostname,
-    username: "opencode",
+    username: "localcode",
     password,
     cors: ["oc://renderer"],
   })
@@ -64,11 +64,11 @@ function prepareServerEnv(password: string) {
   const env = {
     ...process.env,
     ...shellEnv,
-    OPENCODE_EXPERIMENTAL_ICON_DISCOVERY: "true",
-    OPENCODE_EXPERIMENTAL_FILEWATCHER: "true",
-    OPENCODE_CLIENT: "desktop",
-    OPENCODE_SERVER_USERNAME: "opencode",
-    OPENCODE_SERVER_PASSWORD: password,
+    LOCALCODE_EXPERIMENTAL_ICON_DISCOVERY: "true",
+    LOCALCODE_EXPERIMENTAL_FILEWATCHER: "true",
+    LOCALCODE_CLIENT: "desktop",
+    LOCALCODE_SERVER_USERNAME: "localcode",
+    LOCALCODE_SERVER_PASSWORD: password,
     XDG_STATE_HOME: app.getPath("userData"),
   }
   Object.assign(process.env, env)

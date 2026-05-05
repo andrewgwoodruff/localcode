@@ -24,7 +24,7 @@ import { ChildProcessSpawner } from "effect/unstable/process/ChildProcessSpawner
 import { InstanceState } from "@/effect/instance-state"
 
 const MAX_METADATA_LENGTH = 30_000
-const DEFAULT_TIMEOUT = Flag.OPENCODE_EXPERIMENTAL_BASH_DEFAULT_TIMEOUT_MS || 2 * 60 * 1000
+const DEFAULT_TIMEOUT = Flag.LOCALCODE_EXPERIMENTAL_BASH_DEFAULT_TIMEOUT_MS || 2 * 60 * 1000
 const CWD = new Set(["cd", "push-location", "set-location"])
 const FILES = new Set([
   ...CWD,
@@ -445,12 +445,12 @@ export const BashTool = Tool.define(
       }
       // Expose model and provider info for git hooks and other tooling.
       // Both are optional — the hook degrades gracefully when either is absent.
-      env["OPENCODE_SESSION"] = "1"
-      if (cfg.model) env["OPENCODE_MODEL"] = cfg.model
+      env["LOCALCODE_SESSION"] = "1"
+      if (cfg.model) env["LOCALCODE_MODEL"] = cfg.model
       if (cfg.model) {
         const providerID = cfg.model.split("/")[0]
         const providerName = cfg.provider?.[providerID]?.name
-        if (providerName) env["OPENCODE_PROVIDER_NAME"] = providerName
+        if (providerName) env["LOCALCODE_PROVIDER_NAME"] = providerName
       }
       return env
     })

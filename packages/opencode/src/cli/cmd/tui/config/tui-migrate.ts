@@ -147,7 +147,7 @@ async function opencodeFiles(input: { directories: string[]; cwd: string }) {
     files.push(...ConfigPaths.fileInDirectory(dir, "localcode"))
     files.push(...ConfigPaths.fileInDirectory(dir, "opencode"))
   }
-  if (Flag.OPENCODE_CONFIG) files.push(Flag.OPENCODE_CONFIG)
+  if (Flag.LOCALCODE_CONFIG) files.push(Flag.LOCALCODE_CONFIG)
 
   const existing = await Promise.all(
     unique(files).map(async (file) => {

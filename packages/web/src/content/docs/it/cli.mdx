@@ -360,7 +360,7 @@ Avvia un server OpenCode headless per accesso via API. Vedi le [server docs](/do
 opencode serve
 ```
 
-Avvia un server HTTP che espone accesso API alle funzionalità di opencode senza la TUI. Imposta `OPENCODE_SERVER_PASSWORD` per abilitare HTTP basic auth (username di default `opencode`).
+Avvia un server HTTP che espone accesso API alle funzionalità di opencode senza la TUI. Imposta `LOCALCODE_SERVER_PASSWORD` per abilitare HTTP basic auth (username di default `opencode`).
 
 #### Flag
 
@@ -456,7 +456,7 @@ Avvia un server OpenCode headless con interfaccia web.
 opencode web
 ```
 
-Avvia un server HTTP e apre un browser per accedere a OpenCode tramite interfaccia web. Imposta `OPENCODE_SERVER_PASSWORD` per abilitare HTTP basic auth (username di default `opencode`).
+Avvia un server HTTP e apre un browser per accedere a OpenCode tramite interfaccia web. Imposta `LOCALCODE_SERVER_PASSWORD` per abilitare HTTP basic auth (username di default `opencode`).
 
 #### Flag
 
@@ -555,30 +555,30 @@ OpenCode può essere configurato tramite variabili d'ambiente.
 
 | Variabile                             | Tipo    | Descrizione                                                 |
 | ------------------------------------- | ------- | ----------------------------------------------------------- |
-| `OPENCODE_AUTO_SHARE`                 | boolean | Condivide automaticamente le sessioni                       |
-| `OPENCODE_GIT_BASH_PATH`              | string  | Percorso all'eseguibile Git Bash su Windows                 |
-| `OPENCODE_CONFIG`                     | string  | Percorso al file di configurazione                          |
-| `OPENCODE_TUI_CONFIG`                 | string  | Percorso al file di configurazione TUI                      |
-| `OPENCODE_CONFIG_DIR`                 | string  | Percorso alla directory di configurazione                   |
-| `OPENCODE_CONFIG_CONTENT`             | string  | Contenuto JSON di config inline                             |
-| `OPENCODE_DISABLE_AUTOUPDATE`         | boolean | Disabilita i controlli automatici di aggiornamento          |
-| `OPENCODE_DISABLE_PRUNE`              | boolean | Disabilita la potatura dei dati vecchi                      |
-| `OPENCODE_DISABLE_TERMINAL_TITLE`     | boolean | Disabilita aggiornamenti automatici del titolo terminale    |
-| `OPENCODE_PERMISSION`                 | string  | Config permessi JSON inline                                 |
-| `OPENCODE_DISABLE_DEFAULT_PLUGINS`    | boolean | Disabilita i plugin di default                              |
-| `OPENCODE_DISABLE_LSP_DOWNLOAD`       | boolean | Disabilita download automatico dei server LSP               |
-| `OPENCODE_ENABLE_EXPERIMENTAL_MODELS` | boolean | Abilita modelli sperimentali                                |
-| `OPENCODE_DISABLE_AUTOCOMPACT`        | boolean | Disabilita compaction automatica del contesto               |
-| `OPENCODE_DISABLE_CLAUDE_CODE`        | boolean | Disabilita lettura da `.claude` (prompt + skill)            |
-| `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT` | boolean | Disabilita lettura di `~/.claude/CLAUDE.md`                 |
-| `OPENCODE_DISABLE_CLAUDE_CODE_SKILLS` | boolean | Disabilita caricamento di `.claude/skills`                  |
-| `OPENCODE_DISABLE_MODELS_FETCH`       | boolean | Disabilita fetch dei modelli da fonti remote                |
-| `OPENCODE_FAKE_VCS`                   | string  | Provider VCS finto per scopi di test                        |
-| `OPENCODE_CLIENT`                     | string  | Identificatore client (default `cli`)                       |
-| `OPENCODE_ENABLE_EXA`                 | boolean | Abilita gli strumenti di web search Exa                     |
-| `OPENCODE_SERVER_PASSWORD`            | string  | Abilita basic auth per `serve`/`web`                        |
-| `OPENCODE_SERVER_USERNAME`            | string  | Sovrascrive lo username basic auth (default `opencode`)     |
-| `OPENCODE_MODELS_URL`                 | string  | URL personalizzato per recuperare la configurazione modelli |
+| `LOCALCODE_AUTO_SHARE`                 | boolean | Condivide automaticamente le sessioni                       |
+| `LOCALCODE_GIT_BASH_PATH`              | string  | Percorso all'eseguibile Git Bash su Windows                 |
+| `LOCALCODE_CONFIG`                     | string  | Percorso al file di configurazione                          |
+| `LOCALCODE_TUI_CONFIG`                 | string  | Percorso al file di configurazione TUI                      |
+| `LOCALCODE_CONFIG_DIR`                 | string  | Percorso alla directory di configurazione                   |
+| `LOCALCODE_CONFIG_CONTENT`             | string  | Contenuto JSON di config inline                             |
+| `LOCALCODE_DISABLE_AUTOUPDATE`         | boolean | Disabilita i controlli automatici di aggiornamento          |
+| `LOCALCODE_DISABLE_PRUNE`              | boolean | Disabilita la potatura dei dati vecchi                      |
+| `LOCALCODE_DISABLE_TERMINAL_TITLE`     | boolean | Disabilita aggiornamenti automatici del titolo terminale    |
+| `LOCALCODE_PERMISSION`                 | string  | Config permessi JSON inline                                 |
+| `LOCALCODE_DISABLE_DEFAULT_PLUGINS`    | boolean | Disabilita i plugin di default                              |
+| `LOCALCODE_DISABLE_LSP_DOWNLOAD`       | boolean | Disabilita download automatico dei server LSP               |
+| `LOCALCODE_ENABLE_EXPERIMENTAL_MODELS` | boolean | Abilita modelli sperimentali                                |
+| `LOCALCODE_DISABLE_AUTOCOMPACT`        | boolean | Disabilita compaction automatica del contesto               |
+| `LOCALCODE_DISABLE_CLAUDE_CODE`        | boolean | Disabilita lettura da `.claude` (prompt + skill)            |
+| `LOCALCODE_DISABLE_CLAUDE_CODE_PROMPT` | boolean | Disabilita lettura di `~/.claude/CLAUDE.md`                 |
+| `LOCALCODE_DISABLE_CLAUDE_CODE_SKILLS` | boolean | Disabilita caricamento di `.claude/skills`                  |
+| `LOCALCODE_DISABLE_MODELS_FETCH`       | boolean | Disabilita fetch dei modelli da fonti remote                |
+| `LOCALCODE_FAKE_VCS`                   | string  | Provider VCS finto per scopi di test                        |
+| `LOCALCODE_CLIENT`                     | string  | Identificatore client (default `cli`)                       |
+| `LOCALCODE_ENABLE_EXA`                 | boolean | Abilita gli strumenti di web search Exa                     |
+| `LOCALCODE_SERVER_PASSWORD`            | string  | Abilita basic auth per `serve`/`web`                        |
+| `LOCALCODE_SERVER_USERNAME`            | string  | Sovrascrive lo username basic auth (default `opencode`)     |
+| `LOCALCODE_MODELS_URL`                 | string  | URL personalizzato per recuperare la configurazione modelli |
 
 ---
 
@@ -588,16 +588,16 @@ Queste variabili d'ambiente abilitano funzionalità sperimentali che potrebbero 
 
 | Variabile                                       | Tipo    | Descrizione                                |
 | ----------------------------------------------- | ------- | ------------------------------------------ |
-| `OPENCODE_EXPERIMENTAL`                         | boolean | Abilita tutte le funzionalità sperimentali |
-| `OPENCODE_EXPERIMENTAL_ICON_DISCOVERY`          | boolean | Abilita icon discovery                     |
-| `OPENCODE_EXPERIMENTAL_DISABLE_COPY_ON_SELECT`  | boolean | Disabilita copy on select nella TUI        |
-| `OPENCODE_EXPERIMENTAL_BASH_DEFAULT_TIMEOUT_MS` | number  | Timeout di default per comandi bash in ms  |
-| `OPENCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX`        | number  | Massimo token di output per risposte LLM   |
-| `OPENCODE_EXPERIMENTAL_FILEWATCHER`             | boolean | Abilita file watcher per l'intera dir      |
-| `OPENCODE_EXPERIMENTAL_OXFMT`                   | boolean | Abilita formatter oxfmt                    |
-| `OPENCODE_EXPERIMENTAL_LSP_TOOL`                | boolean | Abilita strumento LSP sperimentale         |
-| `OPENCODE_EXPERIMENTAL_DISABLE_FILEWATCHER`     | boolean | Disabilita file watcher                    |
-| `OPENCODE_EXPERIMENTAL_EXA`                     | boolean | Abilita funzionalità Exa sperimentali      |
-| `OPENCODE_EXPERIMENTAL_LSP_TY`                  | boolean | Abilita TY LSP per i file python           |
-| `OPENCODE_EXPERIMENTAL_MARKDOWN`                | boolean | Abilita markdown sperimentale              |
-| `OPENCODE_EXPERIMENTAL_PLAN_MODE`               | boolean | Abilita plan mode                          |
+| `LOCALCODE_EXPERIMENTAL`                         | boolean | Abilita tutte le funzionalità sperimentali |
+| `LOCALCODE_EXPERIMENTAL_ICON_DISCOVERY`          | boolean | Abilita icon discovery                     |
+| `LOCALCODE_EXPERIMENTAL_DISABLE_COPY_ON_SELECT`  | boolean | Disabilita copy on select nella TUI        |
+| `LOCALCODE_EXPERIMENTAL_BASH_DEFAULT_TIMEOUT_MS` | number  | Timeout di default per comandi bash in ms  |
+| `LOCALCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX`        | number  | Massimo token di output per risposte LLM   |
+| `LOCALCODE_EXPERIMENTAL_FILEWATCHER`             | boolean | Abilita file watcher per l'intera dir      |
+| `LOCALCODE_EXPERIMENTAL_OXFMT`                   | boolean | Abilita formatter oxfmt                    |
+| `LOCALCODE_EXPERIMENTAL_LSP_TOOL`                | boolean | Abilita strumento LSP sperimentale         |
+| `LOCALCODE_EXPERIMENTAL_DISABLE_FILEWATCHER`     | boolean | Disabilita file watcher                    |
+| `LOCALCODE_EXPERIMENTAL_EXA`                     | boolean | Abilita funzionalità Exa sperimentali      |
+| `LOCALCODE_EXPERIMENTAL_LSP_TY`                  | boolean | Abilita TY LSP per i file python           |
+| `LOCALCODE_EXPERIMENTAL_MARKDOWN`                | boolean | Abilita markdown sperimentale              |
+| `LOCALCODE_EXPERIMENTAL_PLAN_MODE`               | boolean | Abilita plan mode                          |

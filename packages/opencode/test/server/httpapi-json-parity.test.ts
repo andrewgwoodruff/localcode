@@ -15,10 +15,10 @@ import { it } from "../lib/effect"
 
 void Log.init({ print: false })
 
-const original = Flag.OPENCODE_EXPERIMENTAL_HTTPAPI
+const original = Flag.LOCALCODE_EXPERIMENTAL_HTTPAPI
 
 function app(experimental: boolean) {
-  Flag.OPENCODE_EXPERIMENTAL_HTTPAPI = experimental
+  Flag.LOCALCODE_EXPERIMENTAL_HTTPAPI = experimental
   return Server.Default().app
 }
 type TestApp = ReturnType<typeof app>
@@ -83,7 +83,7 @@ function expectJsonParity(input: {
 }
 
 afterEach(async () => {
-  Flag.OPENCODE_EXPERIMENTAL_HTTPAPI = original
+  Flag.LOCALCODE_EXPERIMENTAL_HTTPAPI = original
   await Instance.disposeAll()
   await resetDatabase()
 })

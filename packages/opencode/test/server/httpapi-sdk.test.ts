@@ -6,10 +6,10 @@ import path from "path"
 import { resetDatabase } from "../fixture/db"
 import { tmpdir } from "../fixture/fixture"
 
-const original = Flag.OPENCODE_EXPERIMENTAL_HTTPAPI
+const original = Flag.LOCALCODE_EXPERIMENTAL_HTTPAPI
 
 function client(directory?: string) {
-  Flag.OPENCODE_EXPERIMENTAL_HTTPAPI = true
+  Flag.LOCALCODE_EXPERIMENTAL_HTTPAPI = true
   const handler = ExperimentalHttpApiServer.webHandler().handler
   const fetch = Object.assign(
     (request: RequestInfo | URL, init?: RequestInit) =>
@@ -28,7 +28,7 @@ async function expectStatus(result: Promise<{ response: Response }>, status: num
 }
 
 afterEach(async () => {
-  Flag.OPENCODE_EXPERIMENTAL_HTTPAPI = original
+  Flag.LOCALCODE_EXPERIMENTAL_HTTPAPI = original
   await resetDatabase()
 })
 

@@ -16,10 +16,10 @@ import { it } from "../lib/effect"
 
 void Log.init({ print: false })
 
-const original = Flag.OPENCODE_EXPERIMENTAL_HTTPAPI
+const original = Flag.LOCALCODE_EXPERIMENTAL_HTTPAPI
 
 function app() {
-  Flag.OPENCODE_EXPERIMENTAL_HTTPAPI = true
+  Flag.LOCALCODE_EXPERIMENTAL_HTTPAPI = true
   return Server.Default().app
 }
 
@@ -98,7 +98,7 @@ function withTmp<A, E, R>(
 }
 
 afterEach(async () => {
-  Flag.OPENCODE_EXPERIMENTAL_HTTPAPI = original
+  Flag.LOCALCODE_EXPERIMENTAL_HTTPAPI = original
   await Instance.disposeAll()
   await resetDatabase()
 })

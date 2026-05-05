@@ -116,9 +116,9 @@ export const create = fn(CreateInput.zod, async (input) => {
   })
 
   const env = {
-    OPENCODE_AUTH_CONTENT: JSON.stringify(await AppRuntime.runPromise(Auth.Service.use((auth) => auth.all()))),
-    OPENCODE_WORKSPACE_ID: config.id,
-    OPENCODE_EXPERIMENTAL_WORKSPACES: "true",
+    LOCALCODE_AUTH_CONTENT: JSON.stringify(await AppRuntime.runPromise(Auth.Service.use((auth) => auth.all()))),
+    LOCALCODE_WORKSPACE_ID: config.id,
+    LOCALCODE_EXPERIMENTAL_WORKSPACES: "true",
     OTEL_EXPORTER_OTLP_HEADERS: process.env.OTEL_EXPORTER_OTLP_HEADERS,
     OTEL_EXPORTER_OTLP_ENDPOINT: process.env.OTEL_EXPORTER_OTLP_ENDPOINT,
     OTEL_RESOURCE_ATTRIBUTES: process.env.OTEL_RESOURCE_ATTRIBUTES,
@@ -566,7 +566,7 @@ async function syncWorkspaceLoop(space: Info, signal: AbortSignal) {
 }
 
 async function startSync(space: Info) {
-  if (!Flag.OPENCODE_EXPERIMENTAL_WORKSPACES) return
+  if (!Flag.LOCALCODE_EXPERIMENTAL_WORKSPACES) return
 
   const adaptor = await getAdaptor(space.projectID, space.type)
   const target = await adaptor.target(space)

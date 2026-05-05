@@ -360,7 +360,7 @@ opencode run --attach http://localhost:4096 "Explain async/await in JavaScript"
 opencode serve
 ```
 
-يشغّل هذا خادم HTTP يوفّر وصولا عبر API لوظائف opencode دون واجهة TUI. اضبط `OPENCODE_SERVER_PASSWORD` لتفعيل مصادقة HTTP الأساسية (اسم المستخدم الافتراضي `opencode`).
+يشغّل هذا خادم HTTP يوفّر وصولا عبر API لوظائف opencode دون واجهة TUI. اضبط `LOCALCODE_SERVER_PASSWORD` لتفعيل مصادقة HTTP الأساسية (اسم المستخدم الافتراضي `opencode`).
 
 #### الرايات
 
@@ -456,7 +456,7 @@ opencode import https://opncd.ai/s/abc123
 opencode web
 ```
 
-يشغّل هذا خادم HTTP ويفتح متصفح ويب للوصول إلى OpenCode عبر واجهة ويب. اضبط `OPENCODE_SERVER_PASSWORD` لتفعيل مصادقة HTTP الأساسية (اسم المستخدم الافتراضي `opencode`).
+يشغّل هذا خادم HTTP ويفتح متصفح ويب للوصول إلى OpenCode عبر واجهة ويب. اضبط `LOCALCODE_SERVER_PASSWORD` لتفعيل مصادقة HTTP الأساسية (اسم المستخدم الافتراضي `opencode`).
 
 #### الرايات
 
@@ -555,29 +555,29 @@ opencode upgrade v0.1.48
 
 | المتغير                               | النوع   | الوصف                                                     |
 | ------------------------------------- | ------- | --------------------------------------------------------- |
-| `OPENCODE_AUTO_SHARE`                 | boolean | مشاركة الجلسات تلقائيا                                    |
-| `OPENCODE_GIT_BASH_PATH`              | string  | مسار ملف Git Bash التنفيذي على Windows                    |
-| `OPENCODE_CONFIG`                     | string  | مسار ملف التهيئة                                          |
-| `OPENCODE_CONFIG_DIR`                 | string  | مسار دليل التهيئة                                         |
-| `OPENCODE_CONFIG_CONTENT`             | string  | محتوى تهيئة JSON مُضمّن                                   |
-| `OPENCODE_DISABLE_AUTOUPDATE`         | boolean | تعطيل التحقق التلقائي من التحديثات                        |
-| `OPENCODE_DISABLE_PRUNE`              | boolean | تعطيل تنقية البيانات القديمة                              |
-| `OPENCODE_DISABLE_TERMINAL_TITLE`     | boolean | تعطيل تحديث عنوان terminal تلقائيا                        |
-| `OPENCODE_PERMISSION`                 | string  | تهيئة أذونات JSON مُضمّنة                                 |
-| `OPENCODE_DISABLE_DEFAULT_PLUGINS`    | boolean | تعطيل الإضافات الافتراضية                                 |
-| `OPENCODE_DISABLE_LSP_DOWNLOAD`       | boolean | تعطيل تنزيل خوادم LSP تلقائيا                             |
-| `OPENCODE_ENABLE_EXPERIMENTAL_MODELS` | boolean | تفعيل النماذج التجريبية                                   |
-| `OPENCODE_DISABLE_AUTOCOMPACT`        | boolean | تعطيل ضغط السياق تلقائيا                                  |
-| `OPENCODE_DISABLE_CLAUDE_CODE`        | boolean | تعطيل القراءة من `.claude` (الموجه + المهارات)            |
-| `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT` | boolean | تعطيل قراءة `~/.claude/CLAUDE.md`                         |
-| `OPENCODE_DISABLE_CLAUDE_CODE_SKILLS` | boolean | تعطيل تحميل `.claude/skills`                              |
-| `OPENCODE_DISABLE_MODELS_FETCH`       | boolean | تعطيل جلب النماذج من مصادر بعيدة                          |
-| `OPENCODE_FAKE_VCS`                   | string  | مزود VCS وهمي لأغراض الاختبار                             |
-| `OPENCODE_CLIENT`                     | string  | معرّف العميل (الافتراضي `cli`)                            |
-| `OPENCODE_ENABLE_EXA`                 | boolean | تفعيل أدوات بحث الويب من Exa                              |
-| `OPENCODE_SERVER_PASSWORD`            | string  | تفعيل المصادقة الأساسية لخادمي `serve`/`web`              |
-| `OPENCODE_SERVER_USERNAME`            | string  | تجاوز اسم مستخدم المصادقة الأساسية (الافتراضي `opencode`) |
-| `OPENCODE_MODELS_URL`                 | string  | رابط مخصص لجلب تهيئة النماذج                              |
+| `LOCALCODE_AUTO_SHARE`                 | boolean | مشاركة الجلسات تلقائيا                                    |
+| `LOCALCODE_GIT_BASH_PATH`              | string  | مسار ملف Git Bash التنفيذي على Windows                    |
+| `LOCALCODE_CONFIG`                     | string  | مسار ملف التهيئة                                          |
+| `LOCALCODE_CONFIG_DIR`                 | string  | مسار دليل التهيئة                                         |
+| `LOCALCODE_CONFIG_CONTENT`             | string  | محتوى تهيئة JSON مُضمّن                                   |
+| `LOCALCODE_DISABLE_AUTOUPDATE`         | boolean | تعطيل التحقق التلقائي من التحديثات                        |
+| `LOCALCODE_DISABLE_PRUNE`              | boolean | تعطيل تنقية البيانات القديمة                              |
+| `LOCALCODE_DISABLE_TERMINAL_TITLE`     | boolean | تعطيل تحديث عنوان terminal تلقائيا                        |
+| `LOCALCODE_PERMISSION`                 | string  | تهيئة أذونات JSON مُضمّنة                                 |
+| `LOCALCODE_DISABLE_DEFAULT_PLUGINS`    | boolean | تعطيل الإضافات الافتراضية                                 |
+| `LOCALCODE_DISABLE_LSP_DOWNLOAD`       | boolean | تعطيل تنزيل خوادم LSP تلقائيا                             |
+| `LOCALCODE_ENABLE_EXPERIMENTAL_MODELS` | boolean | تفعيل النماذج التجريبية                                   |
+| `LOCALCODE_DISABLE_AUTOCOMPACT`        | boolean | تعطيل ضغط السياق تلقائيا                                  |
+| `LOCALCODE_DISABLE_CLAUDE_CODE`        | boolean | تعطيل القراءة من `.claude` (الموجه + المهارات)            |
+| `LOCALCODE_DISABLE_CLAUDE_CODE_PROMPT` | boolean | تعطيل قراءة `~/.claude/CLAUDE.md`                         |
+| `LOCALCODE_DISABLE_CLAUDE_CODE_SKILLS` | boolean | تعطيل تحميل `.claude/skills`                              |
+| `LOCALCODE_DISABLE_MODELS_FETCH`       | boolean | تعطيل جلب النماذج من مصادر بعيدة                          |
+| `LOCALCODE_FAKE_VCS`                   | string  | مزود VCS وهمي لأغراض الاختبار                             |
+| `LOCALCODE_CLIENT`                     | string  | معرّف العميل (الافتراضي `cli`)                            |
+| `LOCALCODE_ENABLE_EXA`                 | boolean | تفعيل أدوات بحث الويب من Exa                              |
+| `LOCALCODE_SERVER_PASSWORD`            | string  | تفعيل المصادقة الأساسية لخادمي `serve`/`web`              |
+| `LOCALCODE_SERVER_USERNAME`            | string  | تجاوز اسم مستخدم المصادقة الأساسية (الافتراضي `opencode`) |
+| `LOCALCODE_MODELS_URL`                 | string  | رابط مخصص لجلب تهيئة النماذج                              |
 
 ---
 
@@ -587,16 +587,16 @@ opencode upgrade v0.1.48
 
 | المتغير                                         | النوع   | الوصف                                       |
 | ----------------------------------------------- | ------- | ------------------------------------------- |
-| `OPENCODE_EXPERIMENTAL`                         | boolean | تفعيل جميع الميزات التجريبية                |
-| `OPENCODE_EXPERIMENTAL_ICON_DISCOVERY`          | boolean | تفعيل اكتشاف الأيقونات                      |
-| `OPENCODE_EXPERIMENTAL_DISABLE_COPY_ON_SELECT`  | boolean | تعطيل النسخ عند التحديد في TUI              |
-| `OPENCODE_EXPERIMENTAL_BASH_DEFAULT_TIMEOUT_MS` | number  | المهلة الافتراضية لأوامر bash بالميلي ثانية |
-| `OPENCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX`        | number  | الحد الأقصى لرموز المخرجات لاستجابات LLM    |
-| `OPENCODE_EXPERIMENTAL_FILEWATCHER`             | boolean | تفعيل مراقب الملفات لكامل الدليل            |
-| `OPENCODE_EXPERIMENTAL_OXFMT`                   | boolean | تفعيل مُنسّق oxfmt                          |
-| `OPENCODE_EXPERIMENTAL_LSP_TOOL`                | boolean | تفعيل أداة LSP تجريبية                      |
-| `OPENCODE_EXPERIMENTAL_DISABLE_FILEWATCHER`     | boolean | تعطيل مراقب الملفات                         |
-| `OPENCODE_EXPERIMENTAL_EXA`                     | boolean | تفعيل ميزات Exa التجريبية                   |
-| `OPENCODE_EXPERIMENTAL_LSP_TY`                  | boolean | تمكين TY LSP لملفات python                  |
-| `OPENCODE_EXPERIMENTAL_MARKDOWN`                | boolean | تفعيل ميزات markdown تجريبية                |
-| `OPENCODE_EXPERIMENTAL_PLAN_MODE`               | boolean | تفعيل وضع الخطة                             |
+| `LOCALCODE_EXPERIMENTAL`                         | boolean | تفعيل جميع الميزات التجريبية                |
+| `LOCALCODE_EXPERIMENTAL_ICON_DISCOVERY`          | boolean | تفعيل اكتشاف الأيقونات                      |
+| `LOCALCODE_EXPERIMENTAL_DISABLE_COPY_ON_SELECT`  | boolean | تعطيل النسخ عند التحديد في TUI              |
+| `LOCALCODE_EXPERIMENTAL_BASH_DEFAULT_TIMEOUT_MS` | number  | المهلة الافتراضية لأوامر bash بالميلي ثانية |
+| `LOCALCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX`        | number  | الحد الأقصى لرموز المخرجات لاستجابات LLM    |
+| `LOCALCODE_EXPERIMENTAL_FILEWATCHER`             | boolean | تفعيل مراقب الملفات لكامل الدليل            |
+| `LOCALCODE_EXPERIMENTAL_OXFMT`                   | boolean | تفعيل مُنسّق oxfmt                          |
+| `LOCALCODE_EXPERIMENTAL_LSP_TOOL`                | boolean | تفعيل أداة LSP تجريبية                      |
+| `LOCALCODE_EXPERIMENTAL_DISABLE_FILEWATCHER`     | boolean | تعطيل مراقب الملفات                         |
+| `LOCALCODE_EXPERIMENTAL_EXA`                     | boolean | تفعيل ميزات Exa التجريبية                   |
+| `LOCALCODE_EXPERIMENTAL_LSP_TY`                  | boolean | تمكين TY LSP لملفات python                  |
+| `LOCALCODE_EXPERIMENTAL_MARKDOWN`                | boolean | تفعيل ميزات markdown تجريبية                |
+| `LOCALCODE_EXPERIMENTAL_PLAN_MODE`               | boolean | تفعيل وضع الخطة                             |

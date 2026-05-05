@@ -32,8 +32,8 @@ jobs:
       - name: Build and upload
         run: ./packages/opencode/script/build.ts
         env:
-          OPENCODE_VERSION: ${{ steps.version.outputs.version }}
-          OPENCODE_CHANNEL: latest
-          OPENCODE_RELEASE: "true"
+          LOCALCODE_VERSION: ${{ steps.version.outputs.version }}
+          LOCALCODE_CHANNEL: latest
+          LOCALCODE_RELEASE: "true"
           GH_REPO: andrewgwoodruff/localcode
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

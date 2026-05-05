@@ -14,9 +14,9 @@ import { tmpdir } from "../fixture/fixture"
 void Log.init({ print: false })
 
 const original = {
-  OPENCODE_EXPERIMENTAL_HTTPAPI: Flag.OPENCODE_EXPERIMENTAL_HTTPAPI,
-  OPENCODE_SERVER_PASSWORD: Flag.OPENCODE_SERVER_PASSWORD,
-  OPENCODE_SERVER_USERNAME: Flag.OPENCODE_SERVER_USERNAME,
+  LOCALCODE_EXPERIMENTAL_HTTPAPI: Flag.LOCALCODE_EXPERIMENTAL_HTTPAPI,
+  LOCALCODE_SERVER_PASSWORD: Flag.LOCALCODE_SERVER_PASSWORD,
+  LOCALCODE_SERVER_USERNAME: Flag.LOCALCODE_SERVER_USERNAME,
 }
 
 const methods = ["get", "post", "put", "delete", "patch"] as const
@@ -27,9 +27,9 @@ function effectOpenApi() {
 }
 
 function app(input?: { password?: string; username?: string }) {
-  Flag.OPENCODE_EXPERIMENTAL_HTTPAPI = true
-  Flag.OPENCODE_SERVER_PASSWORD = input?.password
-  Flag.OPENCODE_SERVER_USERNAME = input?.username
+  Flag.LOCALCODE_EXPERIMENTAL_HTTPAPI = true
+  Flag.LOCALCODE_SERVER_PASSWORD = input?.password
+  Flag.LOCALCODE_SERVER_USERNAME = input?.username
   return Server.Default().app
 }
 
@@ -138,9 +138,9 @@ function fileUrl(input?: { directory?: string; token?: string }) {
 }
 
 afterEach(async () => {
-  Flag.OPENCODE_EXPERIMENTAL_HTTPAPI = original.OPENCODE_EXPERIMENTAL_HTTPAPI
-  Flag.OPENCODE_SERVER_PASSWORD = original.OPENCODE_SERVER_PASSWORD
-  Flag.OPENCODE_SERVER_USERNAME = original.OPENCODE_SERVER_USERNAME
+  Flag.LOCALCODE_EXPERIMENTAL_HTTPAPI = original.LOCALCODE_EXPERIMENTAL_HTTPAPI
+  Flag.LOCALCODE_SERVER_PASSWORD = original.LOCALCODE_SERVER_PASSWORD
+  Flag.LOCALCODE_SERVER_USERNAME = original.LOCALCODE_SERVER_USERNAME
   await Instance.disposeAll()
   await resetDatabase()
 })

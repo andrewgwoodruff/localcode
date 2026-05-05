@@ -26,9 +26,9 @@ jobs:
       - name: Generate daily issues recap
         id: recap
         env:
-          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+          LOCALCODE_API_KEY: ${{ secrets.LOCALCODE_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OPENCODE_PERMISSION: |
+          LOCALCODE_PERMISSION: |
             {
               "bash": {
                 "*": "deny",

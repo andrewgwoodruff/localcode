@@ -7,12 +7,12 @@ import { InstallationVersion } from "@localcode/core/installation/version"
 
 export async function upgrade() {
   const config = await AppRuntime.runPromise(Config.Service.use((cfg) => cfg.getGlobal()))
-  if (config.autoupdate === false || Flag.OPENCODE_DISABLE_AUTOUPDATE || Installation.isPreview()) return
+  if (config.autoupdate === false || Flag.LOCALCODE_DISABLE_AUTOUPDATE || Installation.isPreview()) return
   const method = await Installation.method()
   const latest = await Installation.latest(method).catch(() => {})
   if (!latest) return
 
-  if (Flag.OPENCODE_ALWAYS_NOTIFY_UPDATE) {
+  if (Flag.LOCALCODE_ALWAYS_NOTIFY_UPDATE) {
     await Bus.publish(Installation.Event.UpdateAvailable, { version: latest })
     return
   }
