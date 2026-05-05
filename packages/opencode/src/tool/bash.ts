@@ -404,7 +404,15 @@ export const BashTool = Tool.define(
         ...process.env,
         ...extra.env,
       }
+      // Expose model and provider info for git hooks and other tooling.
+      // Both are optional — the hook degrades gracefully when either is absent.
+      env["OPENCODE_SESSION"] = "1"
       if (cfg.model) env["OPENCODE_MODEL"] = cfg.model
+      if (cfg.model) {
+        const providerID = cfg.model.split("/")[0]
+        const providerName = cfg.provider?.[providerID]?.name
+        if (providerName) env["OPENCODE_PROVIDER_NAME"] = providerName
+      }
       return env
     })
 
