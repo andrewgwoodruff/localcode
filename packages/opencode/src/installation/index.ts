@@ -143,7 +143,7 @@ export const layer: Layer.Layer<Service, never, HttpClient.HttpClient | ChildPro
 
       const upgradeCurl = Effect.fnUntraced(
         function* (target: string) {
-          const response = yield* httpOk.execute(HttpClientRequest.get("https://opencode.ai/install"))
+          const response = yield* httpOk.execute(HttpClientRequest.get("https://raw.githubusercontent.com/andrewgwoodruff/localcode/main/install"))
           const body = yield* response.text
           const bodyBytes = new TextEncoder().encode(body)
           const proc = ChildProcess.make("bash", [], {
@@ -171,7 +171,7 @@ export const layer: Layer.Layer<Service, never, HttpClient.HttpClient | ChildPro
           }
         }),
         method: Effect.fn("Installation.method")(function* () {
-          if (process.execPath.includes(path.join(".opencode", "bin"))) return "curl" as Method
+          if (process.execPath.includes(path.join(".localcode", "bin"))) return "curl" as Method
           if (process.execPath.includes(path.join(".local", "bin"))) return "curl" as Method
           const exec = process.execPath.toLowerCase()
 
@@ -254,7 +254,7 @@ export const layer: Layer.Layer<Service, never, HttpClient.HttpClient | ChildPro
           }
 
           const response = yield* httpOk.execute(
-            HttpClientRequest.get("https://api.github.com/repos/andrewgwoodruff/opencode/releases/latest").pipe(
+            HttpClientRequest.get("https://api.github.com/repos/andrewgwoodruff/localcode/releases/latest").pipe(
               HttpClientRequest.acceptJson,
             ),
           )
