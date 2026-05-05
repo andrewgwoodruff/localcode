@@ -442,12 +442,26 @@ export function variants(model: Provider.Model): Record<string, Record<string, a
 
   const id = model.id.toLowerCase()
   const adaptiveEfforts = anthropicAdaptiveEfforts(model.api.id)
-  // Qwen3-family thinking control. Most openai-compatible runtimes serving
-  // Qwen3 (vLLM, SGLang, MLX-LM server) honor `enable_thinking` via
-  // chat_template_kwargs in the request body. We expose `thinking` and
-  // `no-thinking` variants that toggle it. Users on other runtimes can
-  // override these in their model config.
-  if (id.includes("qwen") && (id.includes("qwen3") || id.includes("qwen-3"))) {
+  // Qwen3-family thinking control. The toggle lives in different request
+  // fields depending on the runtime:
+  //   - Ollama (native /api/chat or /v1 with ollama-ai-provider): root `think`
+  //   - vLLM / SGLang / MLX-LM-server (openai-compatible): `extra_body.chat_template_kwargs.enable_thinking`
+  // We emit the right shape based on the AI SDK provider package. Users on
+  // other runtimes can override via reasoning.{providers,models}.default_options.
+  if (
+    id.includes("qwen") &&
+    (id.includes("qwen3") || id.includes("qwen-3") || id.includes("qwen3.6") || id.includes("qwen-3.6"))
+  ) {
+    const isOllama =
+      model.api.npm === "ollama-ai-provider" ||
+      model.api.npm === "ollama-ai-provider-v2" ||
+      model.api.npm?.includes("ollama")
+    if (isOllama) {
+      return {
+        thinking: { think: true },
+        "no-thinking": { think: false },
+      }
+    }
     return {
       thinking: { extraBody: { chat_template_kwargs: { enable_thinking: true } } },
       "no-thinking": { extraBody: { chat_template_kwargs: { enable_thinking: false } } },

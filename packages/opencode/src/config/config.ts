@@ -151,16 +151,21 @@ export const Info = Schema.Struct({
     Schema.Struct({
       default_variant: Schema.optional(Schema.String).annotate({
         description:
-          "Default reasoning/thinking variant applied to every model that exposes one (e.g. 'low', 'high', 'max', 'no-thinking'). Lower precedence than agent.options and per-message --variant.",
+          "Default reasoning/thinking variant applied to every model that exposes one (e.g. 'low', 'high', 'max', 'no-thinking'). Lower precedence than agent.options and any session/explicit override.",
+      }),
+      default_options: Schema.optional(Schema.Record(Schema.String, Schema.Any)).annotate({
+        description:
+          "Raw provider options merged into every request. Escape hatch for surgical tuning that doesn't fit a named variant (e.g. { thinking: { type: 'enabled', budgetTokens: 12000 } } for Anthropic). Provider-specific keys; you write the schema the AI SDK expects for your model's runtime.",
       }),
       providers: Schema.optional(
         Schema.Record(
           Schema.String,
           Schema.Struct({
             default_variant: Schema.optional(Schema.String),
+            default_options: Schema.optional(Schema.Record(Schema.String, Schema.Any)),
           }),
         ).annotate({
-          description: "Per-provider reasoning overrides keyed by provider id (e.g. 'qwen', 'anthropic').",
+          description: "Per-provider reasoning overrides keyed by provider id (e.g. 'ollama', 'anthropic').",
         }),
       ),
       models: Schema.optional(
@@ -168,6 +173,7 @@ export const Info = Schema.Struct({
           Schema.String,
           Schema.Struct({
             default_variant: Schema.optional(Schema.String),
+            default_options: Schema.optional(Schema.Record(Schema.String, Schema.Any)),
           }),
         ).annotate({
           description: "Per-model reasoning overrides keyed by 'provider/model' id.",
@@ -176,7 +182,7 @@ export const Info = Schema.Struct({
     }),
   ).annotate({
     description:
-      "Reasoning/thinking-mode controls. Precedence (low → high): provider defaults < model.options < reasoning.default_variant < reasoning.providers[id] < reasoning.models[id] < agent.options < per-message --variant.",
+      "Reasoning/thinking-mode controls. Precedence (low → high): provider defaults < model.options < reasoning.* (top-level → providers[id] → models[provider/model]) < agent.options < session or per-message override (slash command, --variant).",
   }),
   default_agent: Schema.optional(Schema.String).annotate({
     description:

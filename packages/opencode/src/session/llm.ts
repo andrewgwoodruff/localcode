@@ -126,18 +126,34 @@ const live: Layer.Layer<
       const lookupVariant = (name: string | undefined) =>
         !input.small && name && input.model.variants ? (input.model.variants[name] ?? {}) : {}
 
-      // Per-message / CLI --variant has highest priority among variants.
+      // Per-message / CLI --variant (and TUI session slash override, which
+      // sets the same field) has highest priority among variants.
       const explicitVariant = lookupVariant(input.user.model.variant)
 
-      // Global config-driven defaults (lowest precedence among reasoning controls):
-      // models[provider/model] > providers[provider] > top-level default_variant
+      // Global config-driven defaults. We resolve the variant name and the
+      // raw options blob from three layers (top-level → providers[id] →
+      // models[provider/model]). Most-specific wins per layer; the explicit
+      // per-message variant short-circuits all of them.
       const modelKey = `${input.model.providerID}/${input.model.id}`
+      const reasoningCfg = cfg.reasoning
+      const reasoningProviderCfg = reasoningCfg?.providers?.[input.model.providerID]
+      const reasoningModelCfg = reasoningCfg?.models?.[modelKey]
+
       const configVariantName = input.user.model.variant
         ? undefined
-        : (cfg.reasoning?.models?.[modelKey]?.default_variant ??
-          cfg.reasoning?.providers?.[input.model.providerID]?.default_variant ??
-          cfg.reasoning?.default_variant)
+        : (reasoningModelCfg?.default_variant ??
+          reasoningProviderCfg?.default_variant ??
+          reasoningCfg?.default_variant)
       const configVariant = lookupVariant(configVariantName)
+
+      // Raw default_options stack low-to-high (top-level baseline, then
+      // provider, then model). Each layer deep-merges over the prior.
+      const configDefaultOptions = pipe(
+        {} as Record<string, any>,
+        mergeDeep(reasoningCfg?.default_options ?? {}),
+        mergeDeep(reasoningProviderCfg?.default_options ?? {}),
+        mergeDeep(reasoningModelCfg?.default_options ?? {}),
+      )
 
       const base = input.small
         ? ProviderTransform.smallOptions(input.model)
@@ -150,6 +166,7 @@ const live: Layer.Layer<
         base,
         mergeDeep(input.model.options),
         mergeDeep(configVariant),
+        mergeDeep(configDefaultOptions),
         mergeDeep(input.agent.options),
         mergeDeep(explicitVariant),
       )
