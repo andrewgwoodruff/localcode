@@ -15,7 +15,7 @@ export function createMenu(deps: Deps) {
 
   const template: Electron.MenuItemConstructorOptions[] = [
     {
-      label: "OpenCode",
+      label: "LocalCode",
       submenu: [
         { role: "about" },
         {

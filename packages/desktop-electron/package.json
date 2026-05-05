@@ -4,10 +4,9 @@
   "version": "1.14.29",
   "type": "module",
   "license": "MIT",
-  "homepage": "https://opencode.ai",
+  "homepage": "https://github.com/andrewgwoodruff/localcode",
   "author": {
-    "name": "OpenCode",
-    "email": "hello@opencode.ai"
+    "name": "LocalCode"
   },
   "scripts": {
     "typecheck": "tsgo -b",

@@ -19,17 +19,17 @@ try {
 process.env.OPENCODE_DISABLE_EMBEDDED_WEB_UI = "true"
 
 const APP_NAMES: Record<string, string> = {
-  dev: "OpenCode Dev",
-  beta: "OpenCode Beta",
-  prod: "OpenCode",
+  dev: "LocalCode Dev",
+  beta: "LocalCode Beta",
+  prod: "LocalCode",
 }
 const APP_IDS: Record<string, string> = {
-  dev: "ai.opencode.desktop.dev",
-  beta: "ai.opencode.desktop.beta",
-  prod: "ai.opencode.desktop",
+  dev: "com.localcode.desktop.dev",
+  beta: "com.localcode.desktop.beta",
+  prod: "com.localcode.desktop",
 }
-const appId = app.isPackaged ? APP_IDS[CHANNEL] : "ai.opencode.desktop.dev"
-app.setName(app.isPackaged ? APP_NAMES[CHANNEL] : "OpenCode Dev")
+const appId = app.isPackaged ? APP_IDS[CHANNEL] : "com.localcode.desktop.dev"
+app.setName(app.isPackaged ? APP_NAMES[CHANNEL] : "LocalCode Dev")
 app.setAppUserModelId(appId)
 app.setPath("userData", join(app.getPath("appData"), appId))
 const { autoUpdater } = pkg
@@ -111,7 +111,7 @@ function setupApp() {
   }
 
   void app.whenReady().then(async () => {
-    app.setAsDefaultProtocolClient("opencode")
+    app.setAsDefaultProtocolClient("localcode")
     registerRendererProtocol()
     setDockIcon()
     setupAutoUpdater()

@@ -27,7 +27,7 @@ const channel = (() => {
 })()
 
 const getBase = (): Configuration => ({
-  artifactName: "opencode-electron-${os}-${arch}.${ext}",
+  artifactName: "localcode-electron-${os}-${arch}.${ext}",
   directories: {
     output: "dist",
     buildResources: "resources",
@@ -54,8 +54,8 @@ const getBase = (): Configuration => ({
     sign: true,
   },
   protocols: {
-    name: "OpenCode",
-    schemes: ["opencode"],
+    name: "LocalCode",
+    schemes: ["localcode"],
   },
   win: {
     icon: `resources/icons/icon.ico`,
@@ -84,29 +84,29 @@ function getConfig() {
     case "dev": {
       return {
         ...base,
-        appId: "ai.opencode.desktop.dev",
-        productName: "OpenCode Dev",
-        rpm: { packageName: "opencode-dev" },
+        appId: "com.localcode.desktop.dev",
+        productName: "LocalCode Dev",
+        rpm: { packageName: "localcode-dev" },
       }
     }
     case "beta": {
       return {
         ...base,
-        appId: "ai.opencode.desktop.beta",
-        productName: "OpenCode Beta",
-        protocols: { name: "OpenCode Beta", schemes: ["opencode"] },
-        publish: { provider: "github", owner: "anomalyco", repo: "opencode-beta", channel: "latest" },
-        rpm: { packageName: "opencode-beta" },
+        appId: "com.localcode.desktop.beta",
+        productName: "LocalCode Beta",
+        protocols: { name: "LocalCode Beta", schemes: ["localcode"] },
+        publish: { provider: "github", owner: "andrewgwoodruff", repo: "localcode-beta", channel: "latest" },
+        rpm: { packageName: "localcode-beta" },
       }
     }
     case "prod": {
       return {
         ...base,
-        appId: "ai.opencode.desktop",
-        productName: "OpenCode",
-        protocols: { name: "OpenCode", schemes: ["opencode"] },
-        publish: { provider: "github", owner: "anomalyco", repo: "opencode", channel: "latest" },
-        rpm: { packageName: "opencode" },
+        appId: "com.localcode.desktop",
+        productName: "LocalCode",
+        protocols: { name: "LocalCode", schemes: ["localcode"] },
+        publish: { provider: "github", owner: "andrewgwoodruff", repo: "localcode", channel: "latest" },
+        rpm: { packageName: "localcode" },
       }
     }
   }

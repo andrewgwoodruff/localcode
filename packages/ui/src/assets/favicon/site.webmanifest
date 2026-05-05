@@ -1,6 +1,6 @@
 {
-  "name": "OpenCode",
-  "short_name": "OpenCode",
+  "name": "LocalCode",
+  "short_name": "LocalCode",
   "icons": [
     {
       "src": "/web-app-manifest-192x192.png",
