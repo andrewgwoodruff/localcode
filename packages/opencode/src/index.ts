@@ -39,6 +39,9 @@ import { PluginCommand } from "./cli/cmd/plug"
 import { Heap } from "./cli/heap"
 import { drizzle } from "drizzle-orm/bun-sqlite"
 import { ensureProcessMetadata } from "@opencode-ai/core/util/opencode-process"
+import { migrateFromOpencode } from "./startup-migration"
+
+await migrateFromOpencode()
 
 const processMetadata = ensureProcessMetadata("main")
 

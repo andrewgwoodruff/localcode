@@ -13,7 +13,7 @@ export const ServeCommand = cmd({
     }
     const opts = await resolveNetworkOptions(args)
     const server = await Server.listen(opts)
-    console.log(`opencode server listening on http://${server.hostname}:${server.port}`)
+    console.log(`localcode server listening on http://${server.hostname}:${server.port}`)
 
     await new Promise(() => {})
     await server.stop()

@@ -10,13 +10,15 @@ import * as Effect from "effect/Effect"
 import { AppFileSystem } from "@opencode-ai/core/filesystem"
 
 export const files = Effect.fn("ConfigPaths.projectFiles")(function* (
-  name: string,
+  name: string | string[],
   directory: string,
   worktree?: string,
 ) {
   const afs = yield* AppFileSystem.Service
+  const names = Array.isArray(name) ? name : [name]
+  const targets = names.flatMap((n) => [`${n}.jsonc`, `${n}.json`])
   return (yield* afs.up({
-    targets: [`${name}.jsonc`, `${name}.json`],
+    targets,
     start: directory,
     stop: worktree,
   })).toReversed()
@@ -28,13 +30,13 @@ export const directories = Effect.fn("ConfigPaths.directories")(function* (direc
     Global.Path.config,
     ...(!Flag.OPENCODE_DISABLE_PROJECT_CONFIG
       ? yield* afs.up({
-          targets: [".opencode"],
+          targets: [".localcode", ".opencode"],
           start: directory,
           stop: worktree,
         })
       : []),
     ...(yield* afs.up({
-      targets: [".opencode"],
+      targets: [".localcode", ".opencode"],
       start: Global.Path.home,
       stop: Global.Path.home,
     })),
