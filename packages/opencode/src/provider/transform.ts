@@ -442,12 +442,16 @@ export function variants(model: Provider.Model): Record<string, Record<string, a
 
   const id = model.id.toLowerCase()
   const adaptiveEfforts = anthropicAdaptiveEfforts(model.api.id)
-  // Qwen3-family thinking control. The toggle lives in different request
-  // fields depending on the runtime:
+  // Qwen3-family thinking control. The toggle lives at different request-
+  // body fields depending on the runtime:
   //   - Ollama (native /api/chat or /v1 with ollama-ai-provider): root `think`
-  //   - vLLM / SGLang / MLX-LM-server (openai-compatible): `extra_body.chat_template_kwargs.enable_thinking`
-  // We emit the right shape based on the AI SDK provider package. Users on
-  // other runtimes can override via reasoning.{providers,models}.default_options.
+  //   - vLLM / SGLang / MLX-LM-server (openai-compatible): root
+  //     `chat_template_kwargs.enable_thinking`
+  // The AI SDK openai-compatible provider spreads any unknown providerOptions
+  // entries directly into the request body, so we emit the field at the
+  // shape the runtime actually receives — no extraBody wrapper, the AI SDK
+  // doesn't honor that key. Users on other runtimes can override via
+  // reasoning.{providers,models}.default_options.
   if (
     id.includes("qwen") &&
     (id.includes("qwen3") || id.includes("qwen-3") || id.includes("qwen3.6") || id.includes("qwen-3.6"))
@@ -463,8 +467,8 @@ export function variants(model: Provider.Model): Record<string, Record<string, a
       }
     }
     return {
-      thinking: { extraBody: { chat_template_kwargs: { enable_thinking: true } } },
-      "no-thinking": { extraBody: { chat_template_kwargs: { enable_thinking: false } } },
+      thinking: { chat_template_kwargs: { enable_thinking: true } },
+      "no-thinking": { chat_template_kwargs: { enable_thinking: false } },
     }
   }
 
